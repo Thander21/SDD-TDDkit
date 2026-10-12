@@ -1,0 +1,424 @@
+# Metodologia SDD — kit portátil para os seus projetos
+
+> **Versão do kit:** 0.1.0 · **Data:** 12/10/2026 · **Origem:** metodologia do
+> ERP PDV D+ (CHG-029, 049, 050, 087 e 088, auditoria de 10/10/2026).
+> **Formato:** Markdown. A extensão `.ai` é a do Adobe Illustrator no Windows:
+> para abrir com preview, use um editor de texto ou renomeie para `.md`.
+>
+> **Fonte única do método:** a pasta `sdd-kit/` ao lado deste arquivo. Este
+> documento traz a decisão, o diagnóstico, o mapa do que é criado em cada
+> projeto e o protocolo de uso. Ele não repete as regras; quando houver
+> diferença, vale o `sdd-kit/kernel/`.
+
+---
+
+## 0. Como começar num projeto (para você e para a IA)
+
+1. **Uma vez por máquina:**
+   `powershell -File "<kit>\install.ps1" maquina -Aplicar`
+   Instala o guard de comando e o de edição nas duas IDEs, mais as
+   permissões do Claude (segredos negados; `git commit`/`git push` com
+   confirmação). Exige Claude Code 2.1.295 ou superior.
+2. **No projeto (árvore git limpa):**
+   `powershell -File "<kit>\install.ps1" projeto -Destino <repo> -Perfil <stack>`
+3. **Na IDE, dentro do projeto, use este prompt:**
+
+   ```text
+   Rode a skill sdd-bootstrap neste projeto. Siga o protocolo dela: descubra a
+   stack e as convenções no código (só leitura, citando arquivo:linha), faça no
+   máximo 5 perguntas, uma por vez, preencha só a seção do projeto no AGENTS.md,
+   calibre o perfil com as 3 sondas e o sdd calibrate, e liste no fim o que
+   gerou e o que ficou como hipótese. Não crie regras de domínio nem personas.
+   ```
+
+4. **Pre-commit e commit:** `powershell -File tools/sdd/sdd.ps1 install-hook`.
+   Depois revise o diff e faça o commit do bootstrap.
+5. **Primeiro projeto de cada stack:** uma change piloto pequena, medindo:
+   - tasks bloqueadas pelo processo;
+   - falsos positivos dos gates;
+   - defeitos achados depois do GREEN.
+
+---
+
+## 1. Decisão
+
+**O caminho: kit pequeno, versionado e instalável (`sdd-kit`), com uma skill
+de bootstrap que preenche só o contexto de cada projeto.**
+
+Não adotar framework externo como base. O OpenSpec fica como spike de 1 a 2
+dias para a camada de artefatos (critérios no Apêndice B).
+
+| Opção | Veredito | Por quê |
+|---|---|---|
+| A. Arquivo único semente | Não, sozinho | Já foi tentado 3 vezes (dez/2025, jul/2026, ago/2026), e nenhum virou artefato vivo. O de dez/2025 mexeu em 47 arquivos do ERP, trouxe referência a outro projeto (um jogo) e levou um `.pfx` para a raiz. A semente congela a parte que muda rápido (caminhos de IDE, hooks, MCP), cada geração por IA sai diferente, e nada confere o resultado. |
+| B. Mini-framework copiado | Sim, **enxuto e com instalador** | É a única opção que leva o diferencial executável (motor, guard, verificador) testado e igual para todos os projetos, com detecção de deriva pelo lock e update sem sobrescrever o que o projeto mudou. |
+| C. Framework externo (aiox-core, Spec Kit, OpenSpec, Kiro, BMAD) | Não como base | Nenhum tem a camada de verificação que é o seu diferencial. O aiox-core falha em quase tudo o que importa (§3). O OpenSpec é o único sério, e só para os artefatos. |
+
+O documento-semente continua existindo, mas como **protocolo** (a skill
+`sdd-bootstrap` e este arquivo). O método não é regerado por IA em cada
+projeto: ele é instalado.
+
+---
+
+## 2. Diagnóstico honesto da metodologia do ERP
+
+**Resposta curta:** as ideias são competitivas e, na verificação, mais
+rigorosas que as dos frameworks públicos. A implementação era específica
+demais, cara demais e nova demais para ser copiada como estava.
+
+**O que é diferencial real** (raro nos frameworks públicos em 11/10/2026):
+
+- **Definição de pronto conferida por máquina.** O `goal-check` cruza tasks,
+  evidência de teste, validate posterior às mudanças, cerca de escopo
+  (`impact`) e veredito do verificador. Nos públicos, quem "verifica" é um LLM
+  lendo código ou uma instrução.
+- **Commit só com validate verde do mesmo código.** Funcionou em 3 de 3
+  commits no ERP.
+- **Verificador independente.** É o único passo que achou defeito real em
+  todas as rodadas; foram 5 achados CONFIRMADOS na CHG-049.
+- **Governança da IA auditável:** a IA nunca se autoaprova, `fonte_normativa`,
+  "sem invenção" e a seção de descartados. A fonte normativa derrubou códigos
+  de rejeição que um relatório gerado por IA tinha atribuído errado (CHG-088).
+- **Requisito ligado a teste por ID estável** e spec viva com deltas.
+
+**O que já é padrão de mercado** (mantê-lo à mão é custo sem retorno): o ciclo
+de artefatos backlog → change → spec viva → archive (veio do OpenSpec), as
+etapas de clarificação e análise (Spec Kit), `AGENTS.md` e skills `SKILL.md`
+(padrões abertos), TDD como regra escrita e revisão adversarial.
+
+**O que era caro ou frágil** (medido no levantamento de 11/10/2026):
+
+- **Muito meta-trabalho.** Em 4 dias de uso, cerca de metade do esforço
+  mensurável foi para a própria metodologia. Foram +13,7 mil linhas de
+  governança contra +1,8 mil de produto.
+- **A ferramenta era a maior fonte de vermelho:** 61% dos FAIL de gate (fora o
+  goal-check) vieram de gates de governança.
+- **Portão virou carimbo.** Em 2 das 5 changes da main, um "continue" no chat
+  valeu como aprovação.
+- **A evidência não fechava.** O RED ficou sem lastro em 3 de 3 changes com
+  ledger: o pipe mascarava o exit e o hook não gravava nada no Antigravity.
+- **Peças sem uso:** waivers, rótulos de falso positivo e `--unblock` foram
+  usados 0 vezes.
+- **Tamanho:** `change.md` de 35 a 53 KB e validate de 9,7 min em média.
+- **Acoplamento:** motor em PowerShell + Dart (~15,5 mil linhas), regras com
+  Flutter e ERP no texto, parser caseiro de YAML que zerou o `impact` da
+  CHG-088 sem alarme.
+- **Maturidade baixa.** O fluxo formal vale desde 08/10/2026, e a autoauditoria
+  de 10/10 achou 7 furos graves (parte fechada na CHG-087, ainda em andamento).
+
+"Simples e manual na base" é meia-verdade: os documentos são simples; a
+automação era um motor próprio, caro de manter. O kit corrige isso
+**separando** o que viaja do que é do ERP e **cortando** o que não provou valor.
+
+---
+
+## 3. Por que não o aiox-core nem os outros
+
+**aiox-core (SynkraAI), conferido em 11/10/2026:**
+
+- **Origem e licença:** derivado do BMAD-METHOD (o LICENSE credita a BMad
+  Code). A atribuição só veio depois de cobrança pública.
+- **Idioma:** não é 100% PT-BR. README, constituição e `docs/pt` estão em
+  português, mas o que a IA executa (personas, tasks, QA gate) está em inglês.
+- **Manutenção:** última release v5.4.1 em 15/08/2026, nenhum PR mergeado
+  depois disso, CI de Windows vermelho desde maio (issue #831) e updater que
+  declara sucesso deixando 136 arquivos velhos (#844) ou sobrescreve
+  customizações (#857).
+- **Pegada:** cerca de 1.172 arquivos instalados, Node dentro do projeto e
+  detecção de projeto que só reconhece `package.json`.
+- **Processo:** as personas aprovam a própria story (nenhuma transição exige
+  humano), não há TDD (a ordem prescrita é implementar e depois testar), não
+  há spec viva nem deltas, e o QA gate é "advisory". Os agentes rodam com
+  `bypassPermissions`.
+- **Veredito:** usar só como fonte de ideias de empacotamento (camadas, manifesto
+  com hashes, presets por stack), e o kit já incorporou essas três. Os motivos
+  da rejeição de 09/10/2026 (contexto, lock-in, LGPD) continuam valendo e
+  pioraram.
+
+**Os demais:**
+
+| Framework | Papel | Veredito |
+|---|---|---|
+| Spec Kit | Etapas | Não tem spec viva nem gate de evidência. |
+| BMAD | Personas | Pesado e com quebras de compatibilidade. |
+| Kiro | IDE própria | Proprietária e paga; o PBT só roda no IDE. |
+| superpowers | Plugin de regras | Útil como texto, mas tudo é por instrução, sem gate. |
+| OpenSpec | Artefatos | Ver Apêndice B. |
+
+---
+
+## 4. Arquitetura do kit (3 camadas + máquina)
+
+| Camada | Conteúdo | Dono | Atualização |
+|---|---|---|---|
+| **Núcleo** (`sdd-kit/kernel`) | regras `sdd-core` (sempre ativa), `sdd-fluxo` e `sdd-revisao`; moldes; skills; subagente verificador; motor `tools/sdd/sdd.ps1` | kit | `install.ps1 update`, com lock sha256 |
+| **Perfil de stack** (`sdd-kit/profiles`) | comandos de gate, teste por alvo, relatório, padrões de carga/zero, tag de rastreio, TDD da stack, idioma de erro, sondas | projeto, depois da instalação | à mão + `sdd calibrate` |
+| **Projeto** | seção do projeto no `AGENTS.md`, riscos, regras de domínio, specs | projeto | nunca tocada pelo kit |
+| **Máquina** | guard de comando, guard de edição, permissões do Claude | você | `install.ps1 maquina -Aplicar` |
+
+**Contexto sempre carregado:** cerca de 9 a 10 KB (`AGENTS.md` + `sdd-core`),
+contra 21,4 KB no ERP. O fluxo e a revisão carregam sob demanda.
+
+---
+
+## 5. O que é criado em cada projeto
+
+| Arquivo | Camada | Quem escreve | Para quê |
+|---|---|---|---|
+| `AGENTS.md`: bloco `sdd-kit:begin/end` | núcleo | instalador | ponteiros do método; lido nativamente pelo Antigravity |
+| `AGENTS.md`: seção "Projeto" | projeto | `sdd-bootstrap` + você | o que é, stack, comandos reais, convenções, **riscos** (tag → invariantes → cenário obrigatório → fonte normativa) |
+| `.claude/CLAUDE.md` | projeto | instalador (cria se não houver) | importa `AGENTS.md` e `sdd-core.md` no Claude |
+| `.agents/rules/sdd-core.md` | núcleo | kit | comportamento, portões, fecho de entrega, o que é imposto × honra |
+| `.agents/rules/sdd-fluxo.md` | núcleo | kit | níveis, etapas e portões, change, TDD, rastreio, desfecho tipado, archive, loop |
+| `.agents/rules/sdd-revisao.md` | núcleo | kit | Regra de Ouro, Verify Pass, prova de mutação, relatório |
+| `.claude/rules/sdd-fluxo.md` | núcleo | kit | stub com `paths` que carrega o fluxo ao abrir specs |
+| `.agents/skills/backlog-refinement`, `sdd-verify`, `sdd-bootstrap` | núcleo | kit | processos canônicos (o Antigravity lê `.agents/skills`) |
+| `.claude/skills/*` | núcleo | instalador | wrappers gerados + `learn` (só Claude) |
+| `.claude/agents/sdd-verifier.md` | núcleo | kit | verificador sem Write/Edit |
+| `<specs>/_templates/{backlog,change,spec}.md` | núcleo | kit | moldes (spec viva com cabeçalhos do OpenSpec) |
+| `<specs>/capabilities/_index.md`, `backlog/`, `changes/`, `concluidas/` | projeto | instalador + fluxo | registro de capacidades e IDs; trabalho |
+| `tools/sdd/sdd.ps1` | núcleo | kit | motor |
+| `.sdd/profile.json` | perfil | instalador → projeto | gates da stack, riscos do projeto, `commit_gate`, `calibrado` |
+| `.sdd/profile.local.json` | perfil (fora do Git) | você | caminhos da máquina (`{PY}`, `{UNITY_EXE}`, `{UE_ROOT}`) |
+| `.sdd/kit.lock.json` | núcleo | instalador | versão, origem e sha256 de cada arquivo gerenciado |
+| `.sdd/state/` | (fora do Git) | motor | último check/validate, goal, logs, relatórios de teste |
+| `.git/hooks/pre-commit` | projeto | `sdd install-hook` | só lê o último check/validate da mesma árvore |
+
+Regras de domínio e personas **não** nascem no bootstrap. Elas vêm pelo
+`learn` quando juntar 3 armadilhas do mesmo território, como regra com
+`paths`/`glob`.
+
+---
+
+## 6. Ciclo de trabalho (resumo; a regra é o `sdd-fluxo.md`)
+
+| Momento | Quem | Comando ou artefato |
+|---|---|---|
+| Ideia | você | `<specs>/backlog/NN - Tema.md` (texto livre) |
+| 0. Refinamento | IA | skill `backlog-refinement` → `Prontidão: Requisitos`; só você marca `Pronto` |
+| Nível | IA (pergunta na dúvida) | trivial / pequeno / feature, com promoção automática |
+| 1-2. Especificação e clarificação | IA + você | change em `Draft`; perguntas viram `D<n>` |
+| **Portão 1** | **você, no terminal** | `sdd approve NN P1` (código digitado; a IA não consegue) |
+| 3-5. Plano, tasks, análise | IA | contratos, invariantes por risco, `impact`, `## Tasks`, análise |
+| **Portão 2** | **você, no terminal** | `sdd approve NN P2` (grava `base_ref`) |
+| 6. RED/GREEN | IA | `sdd test <alvo>`: o motor grava `falha`/`passou`/`carga`/`zero`/`erro`/`inconsistente`; só `falha` vale como RED e só `passou` como GREEN |
+| Fim de task | IA | `sdd check` |
+| Fecho | IA + verificador | `sdd validate` → `sdd-verify` (contexto limpo) → `sdd verify-record` → `sdd goal NN` = `GOAL PASS` |
+| Commit | você | o pre-commit confere o validate da mesma árvore |
+| Archive | IA, a seu pedido | deltas na spec viva, `git mv` para `concluidas/` |
+
+---
+
+## 7. Perfis de stack: estado na v0.1.0
+
+| Stack | Testado | Observação |
+|---|---|---|
+| Node/TS | sim (Node 24, `node:test` + JUnit) | arquivo sem `test()` era reportado como teste que passou: o perfil ignora o caso-arquivo |
+| Python | sim (pytest + ruff num venv) | caminho do venv em `{PY}` |
+| .NET/C# | sim (.NET 9, xUnit, TRX) | `DOTNET_CLI_UI_LANGUAGE=en` (a saída em pt-BR quebrava os padrões) |
+| Flutter/Dart | parcial (variante `dart test`) | parser do reporter JSON testado; `flutter test` usa o mesmo formato |
+| Rust | não (sem cargo aqui) | fase `--no-run` separa compilação de falha; filtro vazio sai 0 |
+| Unity | não | decide pelo XML NUnit (o exit code não é contrato); editor fechado; commit-gate `light` |
+| Unreal | não | `index.json` com campos não documentados; Live Coding bloqueia build externo; commit-gate `light` |
+
+O `goal` recusa perfil com `calibrado: false`. Só as sondas `carga`, `red` e
+`zero` com o resultado certo, mais check e validate verdes, calibram o perfil.
+
+**Jogos (Unity e Unreal):**
+
+- A lógica de jogo vai para código testável (asmdef sem referência à engine no
+  Unity; C++ puro no Unreal).
+- Cena, prefab, Blueprint de fiação, animação e VFX são "casca": recebem teste
+  de carga ou ligação, mais evidência manual curta para a sensação.
+- Regra de jogo dentro de Blueprint ou Animator **não** é casca.
+- O verificador lista o que não consegue ler (binários) em vez de aprovar no
+  escuro.
+
+---
+
+## 8. O que é imposto e o que é honra
+
+O kit protege contra um **agente cooperativo mas descuidado**, não contra
+fraude. No Windows nativo não há sandbox.
+
+**Imposto por máquina:**
+
+- **Portão humano:**
+  - o `sdd approve` recusa stdin redirecionado e sessão do Claude Code;
+  - o P2 e o goal exigem a linha do P1;
+  - o guard de edição nega gravar status (inclusive entre aspas), `base_ref`
+    ou linha de aprovação.
+- **Fonte normativa:** o approve e o goal recusam risco declarado sem
+  `fonte_normativa`.
+- **Evidência:**
+  - o motor grava a evidência e distingue `falha`, `passou`, `carga`, `zero`,
+    `erro` e `inconsistente`;
+  - o goal exige RED e GREEN com lastro por cenário;
+  - a edição de `evidence.jsonl`, `verify.md` e `.sdd/state/` é negada.
+- **Frescor** por hash da árvore.
+- **`goal`** com 9 grupos de critérios: perfil calibrado, frontmatter, status
+  e portões, tasks, evidência, validate, impact, exceções e verificador. Só
+  reprova o que está no working tree; o que entrou por commit de outra frente
+  vira aviso.
+- **Confirmação** para comando destrutivo, `git commit`, `git push` e
+  `verify-record`.
+
+**Honra:**
+
+- a ordem test-first (nenhum gate a prova);
+- a independência do verificador: o guard pede a sua confirmação ao gravar o
+  veredito, mas a sessão que implementou consegue rodar o `verify-record`;
+- evidência `MANUAL`, a tag `SPEC-…/Cn` dentro dos testes (só o verificador
+  confere), o prazo do `RED-pending` e a evidência do nível pequeno (local);
+- comando escondido em script novo ou subprocesso;
+- `git commit --no-verify` feito pelo humano.
+
+O `sdd goal` termina sempre com a lista **"Não verificado por máquina"**.
+
+**Assimetria entre as IDEs:**
+
+- O Claude é a IDE primária do fecho (subagente verificador, `onFailure: block`,
+  permissões).
+- No Antigravity, o guard de edição e o comportamento de falha dos hooks não
+  foram confirmados na documentação, e o verificador roda em sessão nova
+  (honra).
+
+---
+
+## 9. Fora da v0.1.0, e o gatilho para entrar
+
+| Peça | Entra quando |
+|---|---|
+| Waivers formais com aprovador | o primeiro FAIL de gate que precise ser aceito com prazo (hoje vale a seção `## Exceções`, que bloqueia o goal) |
+| `GOAL BLOCKED` / `--unblock` | um loop sem supervisão repetir o mesmo critério 3 vezes sem parar (hoje é regra escrita) |
+| Métricas de falso positivo | dados de 30 dias de uso em 2 projetos |
+| TestPresence (arquivo novo exige teste) | 2 defeitos escapados por arquivo sem teste |
+| Digest pré-compactação | perda de contexto depois de compactar em changes reais |
+| `ai-sync` (paridade de wrappers do projeto) | o primeiro projeto com skill própria em `.agents/skills` |
+| CI recomputando os gates | o primeiro colaborador ou a primeira release pública |
+| OpenSpec na camada de artefatos | o spike do Apêndice B passar |
+| Perfil calibrado de Rust, Unity e Unreal | o primeiro projeto dessa stack (sondas no próprio projeto) |
+| Managed settings (guard que a IA não desliga) | se algum hook for desligado sem você saber |
+
+---
+
+## 10. Manutenção do kit
+
+- **Repositório próprio.** Mova `sdd-kit/` para um repositório git próprio (ex.:
+  `C:\_Projetos\sdd-kit`) e marque cada versão com tag. O lock de cada projeto
+  registra a origem e o commit.
+- **Lições de método** chegam pelo `sdd-kit/INBOX.md` (skill `learn`, destino
+  "upstream do kit"). Nunca edite arquivo gerenciado dentro de um projeto: o
+  `check` acusa, e o `update` gera `.kitnew` ou recusa.
+- **Releases** no máximo uma vez por mês, com teste para cada mudança no
+  motor: `tests/run_all.ps1`, com 226 asserts rodados em cada interpretador
+  na v0.1.0, incluindo as 15 regressões da verificação independente.
+- **Orçamento de tamanho:** `sdd-core` até 5 KB, `sdd-fluxo` até 14 KB e o
+  Markdown do núcleo até 40 KB (hoje são 4,1, 9,6 e cerca de 36 KB).
+- **Meta por projeto:** governança até 0,5:1 contra produto em linhas
+  alteradas. Passou de 1:1, ou o fluxo foi pulado em mais da metade das
+  features? Corte, não acrescente.
+
+---
+
+## 11. ERP PDV D+ e o kit
+
+- **Agora:** o ERP continua com o método dele. As CHG-087 e 088 estão em
+  andamento, e trocar o método no meio repetiria o retrofit em cascata.
+- **Depois do fecho das duas:** decida entre (a) o ERP adotar o kit, numa
+  change própria que mapeia as regras de domínio do ERP para a camada do
+  projeto e aposenta os gates de metodologia do Campo de Força, ou (b)
+  congelar o método do ERP e tratar o kit como sucessor.
+- **Enquanto convivem:** lições de método do ERP que valham para todos vão
+  para o INBOX do kit.
+- **Guard da máquina:** ele passa a valer também no ERP. Isso é mais proteção
+  (fecha furos que o guard do ERP deixa), ao custo de mais ~0,5 s por comando.
+
+---
+
+## 12. Próximos passos, priorizados
+
+1. Mover `sdd-kit/` para um repositório próprio, `git init` e tag `v0.1.0`.
+2. `install.ps1 maquina -Aplicar` e o teste de canário nas duas IDEs: a IA tenta
+   `git push --force` num repositório de teste, e a IDE tem de pedir
+   confirmação.
+3. Primeiro projeto piloto, de preferência numa stack já testada (Node, Python
+   ou .NET): bootstrap, calibração, 1 change piloto e as métricas da seção 0.
+4. Spike do OpenSpec (Apêndice B), de 1 a 2 dias, antes do segundo projeto.
+5. Primeiro projeto Unity ou Unreal: calibrar o perfil no próprio projeto antes
+   de qualquer change.
+
+---
+
+## Apêndice A — Comparativo (consultado em 11/10/2026)
+
+| | Nosso kit | Spec Kit | OpenSpec | Kiro | BMAD | aiox-core |
+|---|---|---|---|---|---|---|
+| Licença e maturidade | próprio, v0.1.0 | MIT, 140.820★, v1.1.3 (09/10) | MIT, 71.637★, v1.14.1 (06/10) | proprietário, pago | MIT, 54.032★, v6.12.2 | MIT composto, derivado do BMAD (GitHub: NOASSERTION), 3.127★, v5.4.1 (15/08) |
+| Spec viva com deltas | sim | não prescreve | nativa | não verificado | não verificado | não |
+| Portão humano | `sdd approve` (terminal) | texto | não tem | entre fases | persona | persona |
+| TDD com evidência | motor grava a evidência + goal | só texto | não | PBT no IDE | módulo | não ("implementar e depois testar") |
+| Verificador independente | subagente sem Write + `verify.md` carimbado | não | `verify` que não bloqueia | hooks | revisor adversarial | QA com `bypassPermissions` |
+| Multi-IDE | Claude + Antigravity | 41 integrações | 40 alvos | só Kiro | vários | 7 alvos |
+| Instala no projeto | ~25 arquivos | `.specify/` | `openspec/` | `.kiro/` | `_bmad/` | ~1.172 arquivos + Node |
+| PT-BR | nativo | presets | `--language` (cabeçalhos e SHALL/MUST em inglês) | não verificado | configurável | parcial |
+
+## Apêndice B — Spike do OpenSpec (1 a 2 dias, repositório descartável)
+
+**Base fixa:** OpenSpec 1.14.1, `npm i -g`, init com `--tools none`,
+telemetria desligada (`OPENSPEC_TELEMETRY=0` e `DO_NOT_TRACK=1`) e um caminho
+com espaço e `+`.
+
+**Passa se todos os critérios abaixo passarem:**
+
+- a. Um requisito `### Requirement: SPEC-X-001 — …`, com corpo em pt-BR + MUST
+  e cenário `#### Scenario: C1 — …`, passa no `validate --strict`.
+- b. Frontmatter no `proposal.md` não gera aviso no validate nem bloqueia o
+  archive.
+- c. `evidence.jsonl` e `verify.md` na pasta da change são ignorados pelo
+  validate e vão junto para o archive.
+- d. O `archive --yes` preserva as seções fora de `## Requirements`, e o
+  resultado passa no `validate --specs --strict`.
+- e. O init com `--tools none` não cria skills nem workflows.
+- f. A pasta `backlog/` e o registro de IDs não geram aviso.
+- g. Com a telemetria desligada, nenhuma chamada de rede sai.
+
+**Se passar:** o motor troca o spec-lint estrutural e o archive manual pelo
+`openspec validate` e pelo `openspec archive`, mantendo portões, evidência,
+goal e verificador por cima. **Se falhar:** os cabeçalhos do kit já são
+compatíveis, e nada se perde.
+
+## Apêndice C — Arquivos antigos desta pasta
+
+| Arquivo | O que virou |
+|---|---|
+| `modeloregras.agents` (jul/2026) | O "copie a pasta" falhou porque levava os caminhos do ERP. Sobreviveram e estão no kit: scope guard, segredos e PII, rollback técnico, cabeçalho e motor em níveis. |
+| `ModeloAntigravityGeminiClaude.md` (ago/2026) | A ordem de precedência virou "segurança primeiro; conflito se pergunta". A auto-detecção da stack está na `sdd-bootstrap`, e o motor em 3 níveis virou `fix`/`check`/`validate`. Caducaram: `GEMINI.md`, `workflows.md`, MCP de projeto e os papéis Gemini/Claude. |
+| `implement_AI_Code_rules.md` (dez/2025) | "O código vale mais que o documento" e a detecção por manifesto ficaram. A semente que se autovalida e o `[REGISTRO]` foram descartados. |
+| `Cline_Improvement_Guide.md`, `ai_execution_report_v2.md` | Ficaram a lista de exclusão (virou o deny de segredos) e o "liste as suposições" (virou a linha "Não verificado:"). Persona, nota de confiança e tom motivacional foram descartados. |
+| `SysAdmin_Management/` | Backup antes de mexer e roteiro de reversão viraram a linha "infra/config" da evidência por tipo. |
+
+Os arquivos antigos podem ficar como histórico: nenhum deles é lido pelo kit.
+
+## Apêndice D — Fontes
+
+- **Levantamento interno de 11/10/2026:** 10 relatórios somente leitura sobre o
+  repositório ERP PDV D+ (regras, skills, gates, changes, Git e ledgers), mais
+  um painel de 5 críticos e um verificador de sintaxe das IDEs.
+- **Documentação oficial consultada em 11/10/2026:**
+  - Claude Code: code.claude.com/docs (hooks, settings, permissions, skills,
+    sub-agents, memory);
+  - Antigravity: antigravity.google/docs (hooks, rules, skills, subagents,
+    migration/workflows-to-skills);
+  - padrões abertos: agentskills.io/specification e agents.md;
+  - frameworks: github.com/github/spec-kit, github.com/Fission-AI/OpenSpec,
+    kiro.dev/docs, github.com/bmad-code-org/BMAD-METHOD,
+    github.com/SynkraAI/aiox-core (README, LICENSE, releases, issues #831,
+    #844, #857) e github.com/obra/superpowers;
+  - stacks: learn.microsoft.com (dotnet test, MTP), nodejs.org (test runner),
+    docs.pytest.org, doc.rust-lang.org/cargo, docs.flutter.dev, dart.dev,
+    docs.unity3d.com (Test Framework, linha de comando) e
+    dev.epicgames.com (Automation, Gauntlet).
+- **Testes do kit em 12/10/2026, nesta máquina** (Windows 11, PowerShell
+  5.1.26100 e 7.6.6, Node 24.19, Python 3.12, .NET 9.0.318 e Dart 3.13.5):
+  `sdd-kit/tests/run_all.ps1`.

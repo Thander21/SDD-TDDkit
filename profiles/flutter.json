@@ -1,0 +1,55 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit (rascunho: calibrado=false ate as sondas passarem no projeto). flutter e dart sao .bat no Windows: evite & | ^ % < > e aspas embutidas no alvo.",
+  "perfil": "flutter",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": {},
+  "vars": {},
+  "projeto": { "specs_root": "Docs/Specs", "spec_lint": "warn", "riscos": [], "riscos_com_fonte": [] },
+  "paths": {
+    "isentos_frescor": [],
+    "gerados": [".dart_tool/", "build/", "coverage/", ".flutter-plugins-dependencies", "windows/flutter/ephemeral/"]
+  },
+  "fix": [
+    { "nome": "dart fix", "cmd": ["dart", "fix", "--apply"] },
+    { "nome": "dart format", "cmd": ["dart", "format", "."] }
+  ],
+  "light": [
+    { "nome": "Format check", "cmd": ["dart", "format", "--output=none", "--set-exit-if-changed", "."] },
+    { "nome": "Analyze", "cmd": ["flutter", "analyze", "--fatal-infos"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["flutter", "test"] }
+  ],
+  "test": {
+    "alvo": "arquivo de teste (test/x_test.dart). Para um cenario: acrescente --plain-name \"SPEC-<DOM>-NNN/Cn]\" no run.",
+    "run": ["flutter", "test", "{alvo}", "--file-reporter", "json:{relatorio}"],
+    "relatorio": "dart-json",
+    "padroes_carga": ["Failed to load \"", "Compilation failed for testPath=", ":\\d+:\\d+: Error: "],
+    "padroes_zero": ["No tests ran", "No tests match"],
+    "alternativas": { "dart_puro": ["dart", "test", "{alvo}", "--file-reporter", "json:{relatorio}"] }
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "group('[SPEC-<DOM>-NNN] <requisito>', () { test('[SPEC-<DOM>-NNN/Cn] <cenario>', () { ... }); }); // nao use tags: do package:test ('/' nao e permitido)"
+  },
+  "tdd": {
+    "logica": "dominio, servicos, repositories, notifiers/controllers: test-first",
+    "casca": "arvore de widgets e layout podem nascer antes; widget test ate o commit-gate. if/switch de regra no build() nao e casca",
+    "stub_red": "a funcao existe e devolve valor errado (UnimplementedError vira erro, nao assercao)"
+  },
+  "erro_idioma": "sealed class de desfecho + switch exaustivo (o compilador acusa variante nova). Excecao so para bug/infra.",
+  "segredos_extra": ["key.properties", "*.jks", "*.keystore", "google-services.json", "GoogleService-Info.plist"],
+  "calibracao": [
+    "carga: teste que importa arquivo inexistente -> 'sdd test test/sonda_test.dart --sonda carga' (esperado: carga; o arquivo vira o teste virtual 'loading')",
+    "red: expect(1, 2) -> '--sonda red' (esperado: falha)",
+    "zero: arquivo de teste com main() vazio -> '--sonda zero' (esperado: zero)"
+  ],
+  "notas": [
+    "flutter test sai 1 tanto por expect quanto por falha de carga: por isso o perfil le o JSON do --file-reporter (testes 'loading <arquivo>' com erro = carga).",
+    "Mutacao: nao ha ferramenta madura; use a prova de mutacao manual (sdd-revisao.md 4).",
+    "Parser dart-json do motor testado com dart test (Dart 3.13) numa cobaia em 12/10/2026; o flutter test usa o mesmo formato de reporter (nao rodado aqui)."
+  ]
+}

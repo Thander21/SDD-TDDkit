@@ -1,0 +1,55 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit (rascunho NAO testado: sem cargo nesta maquina; calibrado=false ate as sondas passarem no projeto). O cargo sai 101 tanto em erro de compilacao quanto em teste falho: por isso a fase build (cargo test --no-run) separa carga de falha.",
+  "perfil": "rust",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": { "CARGO_TERM_COLOR": "never" },
+  "vars": {},
+  "projeto": { "specs_root": "docs/specs", "spec_lint": "warn", "riscos": [], "riscos_com_fonte": [] },
+  "paths": { "isentos_frescor": [], "gerados": ["target/", "mutants.out/", "mutants.out.old/", "lcov.info"] },
+  "fix": [
+    { "nome": "clippy fix", "cmd": ["cargo", "clippy", "--fix", "--allow-dirty", "--workspace", "--all-features"] },
+    { "nome": "fmt", "cmd": ["cargo", "fmt", "--all"] }
+  ],
+  "light": [
+    { "nome": "fmt check", "cmd": ["cargo", "fmt", "--all", "--check"] },
+    { "nome": "clippy -D warnings", "cmd": ["cargo", "clippy", "--workspace", "--all-targets", "--all-features", "--", "-D", "warnings"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["cargo", "test", "--workspace", "--all-features", "--no-fail-fast"] }
+  ],
+  "test": {
+    "alvo": "filtro por nome normalizado da tag, terminado em '_' (SPEC-CALC-003/C1 -> spec_calc_003_c1_), para C1 nao casar C10",
+    "build": ["cargo", "test", "--workspace", "--all-features", "--no-run"],
+    "run": ["cargo", "test", "--workspace", "--all-features", "{alvo}"],
+    "padroes_carga": ["error\\[E\\d{4}\\]: ", "error: could not compile"],
+    "padroes_zero": ["^(?![\\s\\S]*test result: ok\\. [1-9])(?![\\s\\S]*test result: FAILED)"],
+    "alternativas": {
+      "nextest_com_junit": ["cargo", "nextest", "run", "--workspace", "--all-features", "--profile", "sdd", "-E", "test(~{alvo})"],
+      "nextest_nota": "com [profile.sdd.junit] path no .config/nextest.toml o relatorio sai em target/nextest/sdd/junit.xml; o nextest nao roda doctests"
+    }
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "// SPEC-<DOM>-NNN/Cn  (comentario na linha acima do #[test]: e o que o grep acha)\n#[test]\nfn spec_<dom>_nnn_cn_<descricao>() { ... }  // nome normalizado = filtro do cargo test"
+  },
+  "tdd": {
+    "logica": "crates de dominio, funcoes puras, maquinas de estado: test-first",
+    "casca": "main/CLI de fiacao e camada de I/O: teste de integracao (tests/) ate o commit-gate",
+    "stub_red": "a funcao existe e devolve valor errado; todo!()/unimplemented!() vira panic, nao assercao"
+  },
+  "erro_idioma": "enum de erro por operacao + match sem '_' (o compilador acusa variante nova); Result e idiomatico aqui; anyhow so no binario. Excecao (panic) so para bug.",
+  "segredos_extra": [".cargo/credentials", ".cargo/credentials.toml", ".env*"],
+  "calibracao": [
+    "carga: teste que chama funcao inexistente -> 'sdd test spec_sonda_ --sonda carga' (esperado: carga, pela fase build)",
+    "red: assert_eq!(1, 2) num teste spec_sonda_red -> '--sonda red' (esperado: falha)",
+    "zero: filtro que nao casa nada, ex. 'nao_existe_' -> '--sonda zero' (esperado: zero; o cargo sai 0 com 0 testes)"
+  ],
+  "notas": [
+    "Filtro que nao casa nada sai 0: o padrao de zero exige alguma linha 'test result: ok. N' com N >= 1.",
+    "Windows: preferir toolchain MSVC; cobertura com cargo-llvm-cov; mutacao com cargo-mutants.",
+    "Projeto Rust costuma usar docs/ minusculo: specs_root padrao docs/specs."
+  ]
+}

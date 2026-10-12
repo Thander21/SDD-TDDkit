@@ -1,0 +1,68 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit. Copiado para .sdd/profile.json pelo install.ps1 e depois e do PROJETO: ajuste comandos, rode as sondas e 'sdd calibrate'. Comandos sao listas [executavel, args...]; nunca string de shell. No Windows use npm.cmd/npx.cmd (o shim npm.ps1 ja engoliu '--').",
+  "perfil": "node",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": { "CI": "true", "NO_COLOR": "1", "FORCE_COLOR": "0" },
+  "vars": {},
+  "projeto": {
+    "specs_root": "Docs/Specs",
+    "spec_lint": "warn",
+    "riscos": [],
+    "riscos_com_fonte": []
+  },
+  "paths": {
+    "isentos_frescor": [],
+    "gerados": ["node_modules/", "dist/", "build/", "coverage/", ".vitest/", ".stryker-tmp/", ".eslintcache", "*.tsbuildinfo"]
+  },
+  "fix": [
+    { "nome": "Lint fix", "cmd": ["npm.cmd", "run", "lint:fix", "--if-present"] },
+    { "nome": "Format", "cmd": ["npm.cmd", "run", "format", "--if-present"] }
+  ],
+  "light": [
+    { "nome": "Format check", "cmd": ["npm.cmd", "run", "format:check", "--if-present"] },
+    { "nome": "Lint", "cmd": ["npm.cmd", "run", "lint", "--if-present"] },
+    { "nome": "Typecheck", "cmd": ["npm.cmd", "run", "typecheck", "--if-present"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["npm.cmd", "test"] }
+  ],
+  "test": {
+    "alvo": "caminho do arquivo de teste (ex.: test/caixa.test.js). Para um cenario so, ajuste o run com --test-name-pattern.",
+    "build": ["node", "--check", "{alvo}"],
+    "run": ["node", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination={relatorio}", "{alvo}"],
+    "relatorio": "junit",
+    "ignorar_casos": "\\.(c|m)?[jt]sx?$",
+    "padroes_carga": ["SyntaxError:", "ERR_MODULE_NOT_FOUND", "Cannot find module", "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX", "error TS\\d{4,5}:"],
+    "padroes_zero": ["No test files found", "# tests 0"],
+    "alternativas": {
+      "vitest": ["npx.cmd", "vitest", "run", "{alvo}", "--reporter=default", "--reporter=junit", "--outputFile.junit={relatorio}"],
+      "jest": ["npx.cmd", "jest", "--ci", "--runTestsByPath", "{alvo}", "--reporters=default", "--reporters=jest-junit"],
+      "typescript_build": ["npx.cmd", "tsc", "--noEmit", "--pretty", "false"]
+    }
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "test('[SPEC-<DOM>-NNN/Cn] <comportamento observavel>', () => { ... }) // a tag inteira numa unica string do titulo"
+  },
+  "tdd": {
+    "logica": "funcoes e modulos de dominio, servicos, reducers, validadores: test-first",
+    "casca": "JSX/markup e estilo podem nascer antes; teste de componente ate o commit-gate. Regra de negocio dentro do componente nao e casca: sobe para funcao testavel",
+    "stub_red": "a funcao existe e devolve valor errado (nao lance 'not implemented': vira falha que nao e assercao)"
+  },
+  "erro_idioma": "Falha de negocio esperada: uniao discriminada ({ ok: true, valor } | { ok: false, motivo: 'x' | 'y' }) consumida com switch exaustivo + assertNever. Excecao so para bug/infra.",
+  "segredos_extra": [".npmrc", ".env*", "*.pem"],
+  "calibracao": [
+    "carga: crie um teste que importa um modulo inexistente e rode 'sdd test <arquivo> --sonda carga' (esperado: carga)",
+    "red: um teste com assert.equal(1, 2) -> 'sdd test <arquivo> --sonda red' (esperado: falha)",
+    "zero: um arquivo de teste sem nenhum test() -> 'sdd test <arquivo> --sonda zero' (esperado: zero)",
+    "apague os arquivos de sonda depois; o resultado fica em .sdd/state"
+  ],
+  "notas": [
+    "Contrato por scripts do package.json: format:check, lint (eslint . --max-warnings 0), typecheck (tsc --noEmit), test. Script ausente e pulado (--if-present).",
+    "O runner padrao do perfil e o node:test (sem dependencia). Projeto com vitest/jest troca test.run pela alternativa e ajusta padroes.",
+    "Testado em 12/10/2026 com Node 24.19 no Windows (cobaia do kit)."
+  ]
+}

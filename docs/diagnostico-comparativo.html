@@ -1,0 +1,406 @@
+<title>Diagnóstico Comparativo SDD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: relatório técnico em coluna única de leitura (~72ch), tabelas largas roláveis, selos de veredito como estado. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --fg: #18202b;
+  --muted: #566173;
+  --line: #d9dee6;
+  --accent: #2b4c9b;
+  --accent-soft: #e6ecf8;
+  --ok: #1f7a4d;
+  --ok-soft: #e3f3ea;
+  --warn: #9a6200;
+  --warn-soft: #fbf0db;
+  --bad: #b13a2f;
+  --bad-soft: #f9e4e1;
+  --code-bg: #eef1f5;
+  --font-display: "Source Serif 4", "Georgia", "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "Consolas", "Menlo", monospace;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.5rem;
+  --step-3: 2.1rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161d; --surface: #1a202a; --fg: #e4e8ef; --muted: #9aa5b6; --line: #2c3442;
+    --accent: #8fb0ff; --accent-soft: #1f2a44; --ok: #6fd3a0; --ok-soft: #173126; --warn: #f0bd5e;
+    --warn-soft: #34290f; --bad: #f08a7f; --bad-soft: #3a1d1a; --code-bg: #222a36; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a202a; --fg: #e4e8ef; --muted: #9aa5b6; --line: #2c3442;
+  --accent: #8fb0ff; --accent-soft: #1f2a44; --ok: #6fd3a0; --ok-soft: #173126; --warn: #f0bd5e;
+  --warn-soft: #34290f; --bad: #f08a7f; --bad-soft: #3a1d1a; --code-bg: #222a36; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: var(--step-0); line-height: 1.6; margin: 0;
+}
+.wrap { max-width: 64rem; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 48px; }
+.prose { max-width: 72ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: var(--step-3); font-weight: 650; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-2); font-weight: 650; }
+h3 { font-size: var(--step-1); font-weight: 650; }
+p { margin: 0; }
+section { display: grid; gap: 18px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.lede { font-size: var(--step-1); color: var(--fg); max-width: 60ch; }
+.meta { color: var(--muted); font-size: 0.9rem; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.toc a {
+  font-size: 0.86rem; color: var(--accent); text-decoration: none; border: 1px solid var(--line);
+  padding: 4px 10px; border-radius: 999px; background: var(--surface);
+}
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); outline: none; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+ul.clean { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.verdict {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  padding: 20px 22px; display: grid; gap: 10px; border-radius: 6px;
+}
+.verdict p { max-width: 70ch; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 16px; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.col h3 { font-size: 1.05rem; display: flex; gap: 8px; align-items: center; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+thead th { font-weight: 600; background: var(--code-bg); position: sticky; top: 0; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wide table { min-width: 58rem; }
+.chip { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-soft); }
+.chip.bad { color: var(--bad); background: var(--bad-soft); }
+.chip.info { color: var(--accent); background: var(--accent-soft); }
+.measure { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 12px; }
+.m { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 4px; }
+.m .v { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.m .k { color: var(--muted); font-size: 0.88rem; }
+.note { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+.sources { font-size: 0.86rem; color: var(--muted); display: grid; gap: 6px; }
+.sources a { color: var(--accent); overflow-wrap: anywhere; }
+footer { border-top: 1px solid var(--line); padding-top: 20px; }
+@media (max-width: 34rem) { .wrap { padding-block: 24px 48px; gap: 36px; } h1 { font-size: 1.7rem; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">sdd-kit 0.1.0 · atualizado em 12/10/2026</span>
+    <h1>Diagnóstico comparativo da metodologia SDD</h1>
+    <p class="lede">O método do ERP é competitivo nas ideias e mais rigoroso que os frameworks públicos na verificação. Do jeito que estava, porém, ele era específico demais, caro demais e novo demais para ser copiado para outros projetos.</p>
+    <p class="meta">Base: 10 relatórios de levantamento (somente leitura) do repositório ERP PDV D+, 5 críticos independentes, verificação na documentação oficial em 11/10/2026 e os testes do kit em 12/10/2026.</p>
+    <nav class="toc" aria-label="Seções">
+      <a href="#veredito">Veredito</a>
+      <a href="#medidas">O que foi medido</a>
+      <a href="#balanco">Diferencial e custo</a>
+      <a href="#opcoes">As 3 opções</a>
+      <a href="#frameworks">Frameworks</a>
+      <a href="#aiox">aiox-core</a>
+      <a href="#kit">O que o kit corrige</a>
+      <a href="#honra">Imposto ou honra</a>
+      <a href="#verificacao">Verificação</a>
+      <a href="#limites">Limites</a>
+      <a href="#historico">Histórico</a>
+    </nav>
+  </header>
+
+  <section id="veredito">
+    <span class="eyebrow">Veredito</span>
+    <div class="verdict">
+      <h2>Kit pequeno, versionado e instalável</h2>
+      <p><strong>Não</strong> usar um arquivo-semente sozinho, que a IA reescreveria em cada projeto. <strong>Não</strong> adotar framework externo como base. <strong>Sim</strong> para o <code>sdd-kit</code>: núcleo do método e motor de verificação iguais em todos os projetos, perfil por stack, e uma skill de bootstrap que preenche só o contexto de cada projeto.</p>
+      <p>O OpenSpec é a única base externa séria, e só para a camada de artefatos (spec viva, deltas, archive). A recomendação é um teste de 1 a 2 dias antes do segundo projeto.</p>
+    </div>
+    <div class="prose">
+      <p>Perguntas que você fez, respondidas uma a uma:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Pergunta</th><th>Resposta</th></tr></thead>
+        <tbody>
+          <tr><td>É específico demais?</td><td>Na implementação, sim: motor em PowerShell + Dart, Flutter e ERP no texto das regras. Nas ideias, não.</td></tr>
+          <tr><td>Dá para usar em outra stack?</td><td>Do jeito que estava, não. Separando o núcleo do método do perfil da stack, sim: é o que o kit faz.</td></tr>
+          <tr><td>É competitivo, mesmo simples e manual?</td><td>Na verificação, sim, e mais rigoroso que os públicos. Na camada de artefatos, empata, porque foi copiado do OpenSpec e do Spec Kit. "Simples e manual" é meia-verdade: os documentos são simples, mas a automação era um motor próprio caro de manter.</td></tr>
+          <tr><td>Precisa de Flutter ou de página web?</td><td>Não. O kit roda com PowerShell e git, mais as ferramentas da stack de cada projeto. O Flutter só entra em projeto Flutter.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="medidas">
+    <span class="eyebrow">O que foi medido no ERP</span>
+    <h2>Quatro dias de uso do fluxo formal</h2>
+    <p class="note">O fluxo spec-driven vale desde 08/10/2026 e os gates viraram FAIL em 09/10. Os números abaixo medem implantação, não uso em regime; por isso pesam a favor de cortar antes de copiar.</p>
+    <div class="measure">
+      <div class="m"><span class="v">~50%</span><span class="k">do esforço mensurável foi para a própria metodologia</span></div>
+      <div class="m"><span class="v">7,6×</span><span class="k">mais linhas de governança que de produto (+13,7 mil contra +1,8 mil)</span></div>
+      <div class="m"><span class="v">61%</span><span class="k">dos FAIL de gate vieram de gates de governança</span></div>
+      <div class="m"><span class="v">2 de 5</span><span class="k">changes tiveram portão aprovado por um "continue"</span></div>
+      <div class="m"><span class="v">3 de 3</span><span class="k">changes com ledger tiveram RED sem lastro</span></div>
+      <div class="m"><span class="v">0</span><span class="k">usos de waiver, falso positivo ou --unblock</span></div>
+      <div class="m"><span class="v">9,7 min</span><span class="k">de validate completo, em média</span></div>
+      <div class="m"><span class="v">35–53 KB</span><span class="k">por change.md (CHG-087 com 672 linhas)</span></div>
+    </div>
+  </section>
+
+  <section id="balanco">
+    <span class="eyebrow">Balanço</span>
+    <h2>O que levar, o que já existe fora e o que cortar</h2>
+    <div class="grid3">
+      <div class="col">
+        <h3><span class="dot ok"></span>Diferencial real</h3>
+        <ul class="clean">
+          <li><strong>Pronto conferido por máquina:</strong> tasks, evidência, validate do código atual, escopo e veredito do verificador.</li>
+          <li><strong>Commit só com validate verde do mesmo código:</strong> funcionou em 3 de 3 commits.</li>
+          <li><strong>Verificador independente:</strong> achou defeito em todas as rodadas, 5 CONFIRMADOS na CHG-049.</li>
+          <li><strong>A IA nunca se autoaprova</strong>, com a <code>fonte_normativa</code> e a seção de descartados.</li>
+          <li><strong>Requisito ligado ao teste</strong> por ID estável.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3><span class="dot warn"></span>Já é padrão de mercado</h3>
+        <ul class="clean">
+          <li>Ciclo backlog → change → spec viva → archive (OpenSpec).</li>
+          <li>Clarificação e análise antes de implementar (Spec Kit).</li>
+          <li><code>AGENTS.md</code> e skills <code>SKILL.md</code> (padrões abertos).</li>
+          <li>TDD como regra escrita e revisão adversarial.</li>
+        </ul>
+        <p class="note">Manter essa camada à mão é custo sem retorno próprio.</p>
+      </div>
+      <div class="col">
+        <h3><span class="dot bad"></span>Caro ou frágil</h3>
+        <ul class="clean">
+          <li>Motor de ~15,5 mil linhas em PowerShell + Dart; dos 70 gates, só 5 checam o projeto contra o método.</li>
+          <li>Evidência por hook de IDE: o pipe mascarava o exit, e o Antigravity não gravava nada.</li>
+          <li>Parser caseiro de YAML que zerou o <code>impact</code> da CHG-088 sem alarme.</li>
+          <li>Peças sem uso: waivers, métricas, BLOCKED.</li>
+          <li>Autoauditoria de 10/10: 7 furos graves, 21 médios e 3 leves.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="opcoes">
+    <span class="eyebrow">Decisão</span>
+    <h2>As três opções que você levantou</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Opção</th><th>Veredito</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>A.</strong> Arquivo único semente</td>
+            <td><span class="chip bad">Não, sozinho</span></td>
+            <td>Já tentado 3 vezes (dez/2025, jul e ago/2026); nenhum virou artefato vivo. O de dez/2025 mexeu em 47 arquivos do ERP, trouxe referência a outro projeto e um <code>.pfx</code> para a raiz. Cada geração por IA sai diferente, e nada confere o resultado.</td>
+          </tr>
+          <tr>
+            <td><strong>B.</strong> Mini-framework copiado</td>
+            <td><span class="chip ok">Sim, enxuto e com instalador</span></td>
+            <td>Leva o que é executável e testado (motor, guard, verificador) igual para todos os projetos. O lock detecta deriva, e o update não sobrescreve o que o projeto mudou.</td>
+          </tr>
+          <tr>
+            <td><strong>C.</strong> Framework externo</td>
+            <td><span class="chip warn">Não como base</span></td>
+            <td>Nenhum tem a camada de verificação que é o seu diferencial. O aiox-core falha em quase tudo o que importa; o OpenSpec serve só para os artefatos, e vale um teste antes.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="frameworks">
+    <span class="eyebrow">Comparativo · consultado em 11/10/2026</span>
+    <h2>Frameworks spec-driven lado a lado</h2>
+    <div class="scroll wide">
+      <table>
+        <thead>
+          <tr><th>Critério</th><th>sdd-kit</th><th>Spec Kit</th><th>OpenSpec</th><th>Kiro</th><th>BMAD</th><th>aiox-core</th><th>superpowers</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Licença e maturidade</td><td>próprio, v0.1.0</td><td class="num">MIT · 140.820★ · v1.1.3 (09/10)</td><td class="num">MIT · 71.637★ · v1.14.1 (06/10)</td><td>proprietário, pago</td><td class="num">MIT · 54.032★ · v6.12.2</td><td class="num">MIT composto · 3.127★ · v5.4.1 (15/08)</td><td class="num">MIT · 297.574★ · v7.0.0</td></tr>
+          <tr><td>Spec viva com deltas</td><td><span class="chip ok">sim</span></td><td><span class="chip warn">não prescreve</span></td><td><span class="chip ok">nativa</span></td><td><span class="chip info">não verificado</span></td><td><span class="chip info">não verificado</span></td><td><span class="chip bad">não</span></td><td><span class="chip bad">não</span></td></tr>
+          <tr><td>Portão humano</td><td><span class="chip ok">sdd approve no terminal</span></td><td><span class="chip warn">texto</span></td><td><span class="chip bad">não tem</span></td><td><span class="chip ok">entre fases</span></td><td><span class="chip warn">persona</span></td><td><span class="chip bad">persona aprova</span></td><td><span class="chip warn">texto</span></td></tr>
+          <tr><td>TDD com evidência</td><td><span class="chip ok">motor grava + goal cobra</span></td><td><span class="chip warn">só texto</span></td><td><span class="chip bad">não</span></td><td><span class="chip warn">PBT só no IDE</span></td><td><span class="chip warn">módulo</span></td><td><span class="chip bad">não</span></td><td><span class="chip warn">por instrução</span></td></tr>
+          <tr><td>Verificador independente</td><td><span class="chip ok">subagente sem Write</span></td><td><span class="chip bad">inspeção</span></td><td><span class="chip bad">verify não bloqueia</span></td><td><span class="chip warn">hooks</span></td><td><span class="chip warn">revisor adversarial</span></td><td><span class="chip bad">QA com bypassPermissions</span></td><td><span class="chip warn">por instrução</span></td></tr>
+          <tr><td>IDEs</td><td>Claude Code + Antigravity</td><td>41 integrações</td><td>40 alvos</td><td>só Kiro</td><td>várias</td><td>7 alvos</td><td>Claude, Codex, Cursor, Antigravity</td></tr>
+          <tr><td>Pegada no projeto</td><td>~25 arquivos, sem Node</td><td><code>.specify/</code> + CLI Python</td><td><code>openspec/</code> + CLI Node ≥20.19</td><td><code>.kiro/</code></td><td><code>_bmad/</code></td><td>~1.172 arquivos + Node</td><td>plugin</td></tr>
+          <tr><td>PT-BR</td><td><span class="chip ok">nativo</span></td><td><span class="chip warn">presets</span></td><td><span class="chip warn">cabeçalhos e SHALL em inglês</span></td><td><span class="chip info">não verificado</span></td><td><span class="chip warn">configurável</span></td><td><span class="chip warn">parcial</span></td><td><span class="chip warn">inglês</span></td></tr>
+          <tr><td>Papel para você</td><td><span class="chip ok">base</span></td><td><span class="chip warn">fonte de ideias</span></td><td><span class="chip info">teste de 1–2 dias</span></td><td><span class="chip bad">não</span></td><td><span class="chip bad">não</span></td><td><span class="chip bad">não</span></td><td><span class="chip warn">fonte de ideias</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Em 2026, todos esses frameworks criaram uma trilha curta para mudança pequena, o que é admitir o custo da cerimônia. O kit faz o mesmo com os níveis trivial, pequeno e feature.</p>
+  </section>
+
+  <section id="aiox">
+    <span class="eyebrow">Pergunta específica</span>
+    <h2>Por que não o aiox-core</h2>
+    <div class="prose">
+      <p>Você citou o aiox-core como alternativa 100% em português. Conferido no repositório em 11/10/2026:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Ponto</th><th>O que foi encontrado</th></tr></thead>
+        <tbody>
+          <tr><td>Origem</td><td>Derivado do BMAD-METHOD; o LICENSE credita a BMad Code. A atribuição veio depois de cobrança pública (issue #1665 do BMAD, fev/2026).</td></tr>
+          <tr><td>Idioma</td><td>Não é 100% PT-BR. README, constituição e <code>docs/pt</code> estão em português; as personas, as tasks e o QA gate, que é o que a IA executa, estão em inglês.</td></tr>
+          <tr><td>Manutenção</td><td>Última release v5.4.1 em 15/08/2026, sem PR mergeado depois disso. CI de Windows vermelho desde maio (#831).</td></tr>
+          <tr><td>Atualização</td><td>O updater declarou sucesso deixando 136 arquivos velhos (#844) e sobrescreveu customizações (#857).</td></tr>
+          <tr><td>Pegada</td><td>~1.172 arquivos instalados, Node dentro do projeto e detecção de projeto só por <code>package.json</code>.</td></tr>
+          <tr><td>Processo</td><td>As personas aprovam a própria story, sem humano; não há TDD ("implementar e depois testar"), nem spec viva, nem deltas; o QA gate é "advisory".</td></tr>
+          <tr><td>Segurança</td><td>Os agentes de dev e de QA rodam com <code>bypassPermissions</code>; o módulo Pro é pago e usa fingerprint da máquina.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Do aiox-core, o kit aproveitou 3 ideias de empacotamento: camadas (núcleo, perfil, projeto), manifesto com hash por arquivo e um perfil por stack.</p>
+  </section>
+
+  <section id="kit">
+    <span class="eyebrow">O que muda nos outros projetos</span>
+    <h2>Problema medido no ERP e resposta no kit</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Problema no ERP</th><th>Resposta no sdd-kit</th></tr></thead>
+        <tbody>
+          <tr><td>"Continue" no chat valia como portão</td><td><code>sdd approve NN P1|P2</code> só roda no terminal do usuário, com código digitado; a IA é recusada.</td></tr>
+          <tr><td>RED sem lastro: pipe e hook do Antigravity</td><td><code>sdd test &lt;alvo&gt;</code> grava a própria evidência e separa <code>falha</code>, <code>passou</code>, <code>carga</code>, <code>zero</code>, <code>erro</code> e <code>inconsistente</code> pelo relatório da stack.</td></tr>
+          <tr><td>Frescor por data de arquivo</td><td>Hash da árvore (<code>git write-tree</code>): apagar e renomear também contam.</td></tr>
+          <tr><td>Motor preso ao Dart e ao Flutter</td><td>Motor de ~1,2 mil linhas de PowerShell (5.1 e 7) e perfis por stack: Node, Python, .NET, Flutter, Rust, Unity e Unreal.</td></tr>
+          <tr><td>Parser caseiro que falhava aberto</td><td>Frontmatter estrito que falha fechado em qualquer forma inesperada.</td></tr>
+          <tr><td>Guard deixava passar <code>git -C . reset --hard</code>, <code>push +main</code> e <code>--no-verify</code></td><td>Guard da máquina com git normalizado, testado num corpus de 98 casos.</td></tr>
+          <tr><td>21,4 KB de contexto fixo</td><td>~10 KB fixos; o fluxo e a revisão carregam sob demanda.</td></tr>
+          <tr><td>Change de 50 KB com diário de revisões</td><td>Alvo de ~250 linhas; as revisões vão para o <code>verify.md</code> e para o commit.</td></tr>
+          <tr><td>Métodos copiados divergindo</td><td>Instalador com lock sha256, <code>check</code> de deriva e <code>update</code> que gera <code>.kitnew</code> sem sobrescrever o que o projeto mudou.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="honra">
+    <span class="eyebrow">Modelo de ameaça</span>
+    <h2>O que a máquina garante e o que é honra</h2>
+    <p class="prose">O kit protege contra um agente cooperativo mas descuidado, não contra fraude. No Windows nativo não há sandbox.</p>
+    <div class="grid3">
+      <div class="col">
+        <h3><span class="dot ok"></span>Imposto por máquina</h3>
+        <ul class="clean">
+          <li>Portões P1 e P2 (terminal humano; status e aprovação negados ao hook de edição).</li>
+          <li>Fonte normativa para os riscos declarados.</li>
+          <li>RED e GREEN com lastro por cenário.</li>
+          <li>Validate e verificador da árvore atual.</li>
+          <li>Escopo do working tree dentro do <code>impact</code>.</li>
+          <li>Confirmação para comando destrutivo, commit, push e veredito.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3><span class="dot warn"></span>Honra</h3>
+        <ul class="clean">
+          <li>Ordem test-first: nenhum gate prova que o teste veio antes.</li>
+          <li>Independência do verificador.</li>
+          <li>Evidência MANUAL e tag <code>SPEC-…/Cn</code> dentro dos testes.</li>
+          <li>Comando escondido em script novo ou subprocesso.</li>
+          <li><code>git commit --no-verify</code> feito pelo humano.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3><span class="dot bad"></span>Assimetria entre IDEs</h3>
+        <ul class="clean">
+          <li>O Claude é a IDE do fecho: subagente verificador, <code>onFailure: block</code> e permissões.</li>
+          <li>No Antigravity, o guard de edição e a falha de hook não foram confirmados na documentação, e o verificador roda em sessão nova.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="verificacao">
+    <span class="eyebrow">Executor ≠ verificador, aplicado ao próprio kit</span>
+    <h2>Verificação independente antes da entrega</h2>
+    <p class="prose">Um verificador separado leu o kit inteiro e reproduziu cada problema num sandbox. Os 7 achados graves foram corrigidos, cada um com teste de regressão.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Achado grave</th><th>Correção</th></tr></thead>
+        <tbody>
+          <tr><td>GOAL PASS sem nenhuma evidência de teste</td><td>RED e GREEN com lastro exigidos por <code>Scenario: Cn</code> dos deltas.</td></tr>
+          <tr><td>Commit de outra frente reprovava o escopo</td><td>Só o working tree reprova; o que entrou por commit vira aviso.</td></tr>
+          <tr><td>Caminho com acento caía em "fora do impact"</td><td>Git com <code>core.quotepath=false</code>.</td></tr>
+          <tr><td>P1 pulável com o status entre aspas</td><td>Hook lê aspas; o P2 e o goal exigem a linha do P1.</td></tr>
+          <tr><td><code>fonte_normativa</code> não bloqueava</td><td>Cobrada no approve e no goal.</td></tr>
+          <tr><td>Exit diferente de 0 virava "passou"</td><td>Classificado como <code>inconsistente</code>; exceção vira <code>erro</code>.</td></tr>
+          <tr><td>Perfil Rust quebrava com <code>docs/specs</code> no Windows</td><td>Raiz resolvida antes de gravar e comparação sem caixa.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="measure">
+      <div class="m"><span class="v">226 / 226</span><span class="k">asserts no Windows PowerShell 5.1</span></div>
+      <div class="m"><span class="v">226 / 226</span><span class="k">asserts no PowerShell 7</span></div>
+      <div class="m"><span class="v">4 stacks</span><span class="k">rodadas de verdade: Node, Python, .NET e Dart</span></div>
+    </div>
+  </section>
+
+  <section id="limites">
+    <span class="eyebrow">Limites</span>
+    <h2>O que não está verificado</h2>
+    <ul class="clean prose">
+      <li>Perfis Rust, Unity e Unreal: rascunhos sem execução; o goal recusa até as sondas passarem no próprio projeto.</li>
+      <li><code>flutter test</code> real: só a variante <code>dart test</code> rodou, com o mesmo formato de relatório.</li>
+      <li>Hooks no Antigravity: o comportamento em falha e o payload de edição não estão documentados; vale o teste de canário.</li>
+      <li>OpenSpec: o teste de 1 a 2 dias não foi feito, porque exige instalar um CLI global.</li>
+      <li>Nada foi aplicado ao <code>~/.claude</code> nem ao ERP.</li>
+    </ul>
+    <h3>Próximos passos</h3>
+    <ul class="clean prose">
+      <li>Mover o <code>sdd-kit</code> para um repositório próprio, com a tag <code>v0.1.0</code>.</li>
+      <li><code>install.ps1 maquina -Aplicar</code> e o teste de canário: a IA tenta <code>git push --force</code> e a IDE tem de pedir confirmação.</li>
+      <li>Primeiro piloto em Node, Python ou .NET: bootstrap, calibração e 1 change pequena, medindo o atrito.</li>
+      <li>Teste do OpenSpec antes do segundo projeto.</li>
+      <li>ERP no método atual até as CHG-087 e 088 fecharem; depois, decidir se ele adota o kit.</li>
+    </ul>
+  </section>
+
+  <section id="historico">
+    <span class="eyebrow">Histórico</span>
+    <h2>Como este diagnóstico evolui</h2>
+    <p class="prose">A cada release do kit, esta página é atualizada junto: as seções "O que o kit corrige", "Imposto ou honra", "Verificação" e "Limites" acompanham o motor, e o comparativo com os frameworks é reconferido quando uma decisão depender dele. Cada mudança ganha uma linha abaixo.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th class="num">Versão do kit</th><th class="num">Data</th><th>O que mudou no diagnóstico</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0.1.0</td><td class="num">12/10/2026</td><td>Primeira versão: levantamento do ERP, painel de 5 críticos, comparativo de 11/10/2026 e verificação independente com 7 achados graves corrigidos (226 asserts por interpretador).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="sources">
+    <span class="eyebrow">Fontes</span>
+    <p>Levantamento interno de 11/10/2026: regras, skills, gates, changes, Git e ledgers do ERP PDV D+ (somente leitura).</p>
+    <p>Documentação oficial consultada em 11/10/2026:
+      <a href="https://code.claude.com/docs/en/hooks">Claude Code hooks</a> ·
+      <a href="https://antigravity.google/docs/hooks">Antigravity hooks</a> ·
+      <a href="https://agentskills.io/specification">Agent Skills</a> ·
+      <a href="https://github.com/github/spec-kit">Spec Kit</a> ·
+      <a href="https://github.com/Fission-AI/OpenSpec">OpenSpec</a> ·
+      <a href="https://kiro.dev/docs/specs/">Kiro</a> ·
+      <a href="https://github.com/bmad-code-org/BMAD-METHOD">BMAD-METHOD</a> ·
+      <a href="https://github.com/SynkraAI/aiox-core">aiox-core</a> ·
+      <a href="https://github.com/obra/superpowers">superpowers</a>
+    </p>
+    <p>Fonte desta página: <span class="mono">sdd-kit/docs/diagnostico-comparativo.html</span>. Decisão e protocolo de uso: <span class="mono">Metodologia SDD.ai</span>, ao lado da pasta do kit.</p>
+  </footer>
+</div>

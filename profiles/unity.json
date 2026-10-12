@@ -1,0 +1,54 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit (rascunho NAO testado; calibrado=false ate as sondas passarem no projeto). {UNITY_EXE} vem de .sdd/profile.local.json (caminho do editor pelo Unity Hub). O batchmode NAO abre projeto que o editor ja tem aberto: feche o editor para rodar o gate. Nao use -quit junto de -runTests. '-logFile -' manda o log para o stdout (o motor captura e o PowerShell espera o editor terminar).",
+  "perfil": "unity",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "light",
+  "env": {},
+  "vars": { "UNITY_EXE": "" },
+  "projeto": { "specs_root": "Docs/Specs", "spec_lint": "warn", "riscos": [], "riscos_com_fonte": [] },
+  "paths": {
+    "isentos_frescor": ["ProjectSettings/**", "Packages/packages-lock.json", "UserSettings/**"],
+    "gerados": ["Library/", "Temp/", "Obj/", "Build/", "Builds/", "Logs/", "UserSettings/", "MemoryCaptures/", "Recordings/", ".vs/", "*.csproj", "*.sln", "*.slnx", "*.pidb", "*.pdb", "*.apk", "*.aab"]
+  },
+  "fix": [
+    { "nome": "C# whitespace", "cmd": ["dotnet", "format", "whitespace", "Assets", "--folder", "--exclude", "Assets/Plugins"] }
+  ],
+  "light": [
+    { "nome": "C# whitespace check", "cmd": ["dotnet", "format", "whitespace", "Assets", "--folder", "--verify-no-changes", "--exclude", "Assets/Plugins"] },
+    { "nome": "EditMode (logica)", "cmd": ["{UNITY_EXE}", "-batchmode", "-nographics", "-projectPath", "{raiz}", "-runTests", "-testPlatform", "EditMode", "-testResults", "{raiz}/Logs/sdd/editmode.xml", "-logFile", "-"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "PlayMode smoke", "cmd": ["{UNITY_EXE}", "-batchmode", "-projectPath", "{raiz}", "-runTests", "-testPlatform", "PlayMode", "-testCategory", "Smoke", "-testResults", "{raiz}/Logs/sdd/playmode.xml", "-logFile", "-"] }
+  ],
+  "test": {
+    "alvo": "nome completo NUnit como regex (^Jogo\\.Combate\\.DanoTests\\.) ou varios separados por ';'",
+    "run": ["{UNITY_EXE}", "-batchmode", "-nographics", "-projectPath", "{raiz}", "-runTests", "-testPlatform", "EditMode", "-testFilter", "{alvo}", "-testResults", "{relatorio}", "-logFile", "-"],
+    "relatorio": "nunit3",
+    "padroes_carga": ["error CS\\d{4}", "Scripts have compiler errors", "Scripts had compilation errors", "Multiple Unity instances cannot open the same project", "label=\"Invalid\""],
+    "padroes_zero": []
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "// SPEC-<DOM>-NNN/Cn  (linha acima do [Test])\n[Test, Description(\"SPEC-<DOM>-NNN/Cn\")]\npublic void Metodo_Cenario_Resultado() { ... }  // NUNCA [Category] com '-': o NUnit da Unity marca o teste como Invalid"
+  },
+  "tdd": {
+    "logica": "regras (combate, economia, inventario, progressao, save) em classes C# puras num .asmdef com noEngineReferences=true: test-first em EditMode",
+    "casca": "MonoBehaviour/ScriptableObject finos (humble object), cena, prefab, animacao, VFX: teste de carga/ligacao (EditMode) ou PlayMode smoke ate o commit; sensacao = evidencia manual curta",
+    "stub_red": "o metodo existe e devolve valor errado; NotImplementedException vira erro (label Error), nao assercao"
+  },
+  "erro_idioma": "record abstrato/hierarquia fechada de desfecho + switch, com um teste por variante (o compilador nao garante exaustividade).",
+  "segredos_extra": ["*.keystore", "*.jks", "*.p8", "*.mobileprovision", "user.keystore"],
+  "calibracao": [
+    "carga: teste que referencia tipo inexistente -> 'sdd test ^Sonda\\. --sonda carga' (esperado: carga: sem relatorio ou error CS)",
+    "red: Assert.That(1, Is.EqualTo(2)) -> '--sonda red' (esperado: falha, lida no XML)",
+    "zero: filtro que nao casa nada -> '--sonda zero' (esperado: zero: total=0 no XML)"
+  ],
+  "notas": [
+    "Exit code do Unity nao e contrato ('no common definition for exit codes'): o perfil decide pelo XML NUnit.",
+    "Projeto existente sem asmdef: faca antes uma change de preparacao (assembly de logica testavel) para o primeiro RED.",
+    "Commit-gate light (estrutura + EditMode); PlayMode e perf no goal ou na noite. Git LFS para binarios; .meta sempre no mesmo commit do asset.",
+    "IA nao edita .unity/.prefab/.asset a mao (salvo escalar trivial): mudanca de asset e no editor ou por script de editor versionado."
+  ]
+}

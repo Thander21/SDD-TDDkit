@@ -1,0 +1,60 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit. Copiado para .sdd/profile.json pelo install.ps1 e depois e do PROJETO. DOTNET_CLI_UI_LANGUAGE=en: a saida do dotnet em pt-BR ('Aprovado!', 'Falha na compilacao') quebraria os padroes. --tl:off: o Terminal Logger e padrao desde o .NET 9 e nao deve ser parseado.",
+  "perfil": "dotnet",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": { "DOTNET_CLI_UI_LANGUAGE": "en", "DOTNET_NOLOGO": "1", "DOTNET_CLI_TELEMETRY_OPTOUT": "1", "MSBUILDTERMINALLOGGER": "off" },
+  "vars": {},
+  "projeto": {
+    "specs_root": "Docs/Specs",
+    "spec_lint": "warn",
+    "riscos": [],
+    "riscos_com_fonte": []
+  },
+  "paths": {
+    "isentos_frescor": [],
+    "gerados": ["bin/", "obj/", "TestResults/", "StrykerOutput/", "artifacts/", "*.binlog", ".vs/"]
+  },
+  "fix": [
+    { "nome": "Format", "cmd": ["dotnet", "format"] }
+  ],
+  "light": [
+    { "nome": "Restore", "cmd": ["dotnet", "restore"] },
+    { "nome": "Format check", "cmd": ["dotnet", "format", "--verify-no-changes", "--no-restore"] },
+    { "nome": "Build (warnings = erro)", "cmd": ["dotnet", "build", "--no-restore", "-warnaserror", "-nologo"], "falha_se": "Build FAILED|error [A-Z]+\\d+:" }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["dotnet", "test", "--no-build", "--nologo"] }
+  ],
+  "test": {
+    "alvo": "expressao --filter do VSTest: FullyQualifiedName~Namespace.Classe | Spec=SPEC-<DOM>-NNN/Cn (xUnit Trait)",
+    "build": ["dotnet", "build", "--no-restore", "-nologo"],
+    "run": ["dotnet", "test", "--no-build", "--nologo", "--filter", "{alvo}", "--logger", "trx", "--results-directory", "{relatorio_dir}"],
+    "relatorio": "trx",
+    "padroes_carga": ["error CS\\d{4}", "error MSB\\d{4}", "error NETSDK\\d{4}", "Build FAILED"],
+    "padroes_zero": ["No test matches the given testcase filter", "No test is available"]
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "xUnit: [Fact][Trait(\"Spec\", \"SPEC-<DOM>-NNN/Cn\")] | MSTest: [TestCategory(\"SPEC-<DOM>-NNN/Cn\")] | NUnit: [Property(\"Spec\", \"SPEC-<DOM>-NNN/Cn\")] (nunca [Category] com '-'). Rodar por tag: --filter \"Spec=SPEC-<DOM>-NNN/Cn\""
+  },
+  "tdd": {
+    "logica": "dominio, servicos, validadores, handlers: test-first",
+    "casca": "controllers/razor/XAML de fiacao: teste de integracao ate o commit-gate; regra de negocio sobe para classe testavel",
+    "stub_red": "o metodo existe e devolve valor errado; NotImplementedException nao conta como RED de assercao"
+  },
+  "erro_idioma": "Falha de negocio esperada: record abstrato/hierarquia fechada de desfecho + switch exaustivo (com teste por variante, o compilador nao garante exaustividade). Excecao so para bug/infra.",
+  "segredos_extra": ["*.snk", "*.publishsettings", "local.settings.json", "appsettings.*.json", "*.pfx"],
+  "calibracao": [
+    "carga: um teste que chama metodo inexistente (error CS) -> 'sdd test FullyQualifiedName~Sonda --sonda carga' (esperado: carga, pela fase build)",
+    "red: Assert.Equal(1, 2) -> '--sonda red' (esperado: falha)",
+    "zero: filtro que nao casa nada, ex. 'FullyQualifiedName~NaoExiste' -> '--sonda zero' (esperado: zero)"
+  ],
+  "notas": [
+    "Projeto MTP (Microsoft.Testing.Platform, SDK 10+ via global.json): troque test.run por 'dotnet test --project <proj> --no-build --report-trx ...' e reveja os exit codes (2 falha, 8 zero testes).",
+    "Bug conhecido dotnet/msbuild#9825: com -warnaserror o build pode imprimir 'Build FAILED' e sair 0; por isso o gate tem falha_se.",
+    "Testado em 12/10/2026 com .NET SDK 9.0.318 + xUnit no Windows (cobaia do kit)."
+  ]
+}

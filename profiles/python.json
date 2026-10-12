@@ -1,0 +1,66 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit. Copiado para .sdd/profile.json pelo install.ps1 e depois e do PROJETO. {PY} vem de .sdd/profile.local.json (fora do Git), ex.: { \"vars\": { \"PY\": \".venv/Scripts/python.exe\" } }. Chamar o python do venv pelo caminho evita que 'python -m' esconda import quebrado.",
+  "perfil": "python",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": { "PYTHONUTF8": "1", "PY_COLORS": "0", "NO_COLOR": "1" },
+  "vars": { "PY": "python" },
+  "projeto": {
+    "specs_root": "Docs/Specs",
+    "spec_lint": "warn",
+    "riscos": [],
+    "riscos_com_fonte": []
+  },
+  "paths": {
+    "isentos_frescor": [],
+    "gerados": [".venv/", "__pycache__/", "*.pyc", ".pytest_cache/", ".mypy_cache/", ".ruff_cache/", ".coverage", "htmlcov/", "build/", "dist/", "*.egg-info/"]
+  },
+  "fix": [
+    { "nome": "Ruff fix", "cmd": ["{PY}", "-m", "ruff", "check", "--fix", "."] },
+    { "nome": "Ruff format", "cmd": ["{PY}", "-m", "ruff", "format", "."] }
+  ],
+  "light": [
+    { "nome": "Format check", "cmd": ["{PY}", "-m", "ruff", "format", "--check", "."] },
+    { "nome": "Lint", "cmd": ["{PY}", "-m", "ruff", "check", ".", "--output-format", "concise"] },
+    { "nome": "Coleta", "cmd": ["{PY}", "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["{PY}", "-m", "pytest", "-q", "-p", "no:cacheprovider"] }
+  ],
+  "test": {
+    "alvo": "node id do pytest: tests/test_x.py ou tests/test_x.py::test_spec_dom_001_c1_...",
+    "build": ["{PY}", "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", "{alvo}"],
+    "build_exit_zero": [4, 5],
+    "run": ["{PY}", "-m", "pytest", "{alvo}", "-q", "-rfE", "-p", "no:cacheprovider", "--junitxml={relatorio}"],
+    "relatorio": "junit",
+    "padroes_carga": ["(?m)^ERROR collecting ", "ImportError while importing test module", "ERROR at setup of "],
+    "padroes_zero": ["no tests ran"],
+    "alternativas": {
+      "unittest_sem_relatorio": ["{PY}", "-m", "unittest", "{alvo}"],
+      "unittest_padroes_carga": ["Failed to import test module", "ModuleNotFoundError", "ImportError", "SyntaxError"],
+      "unittest_padroes_zero": ["Ran 0 tests", "NO TESTS RAN"]
+    }
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "@pytest.mark.spec(id=\"SPEC-<DOM>-NNN/Cn\") + docstring '\"\"\"SPEC-<DOM>-NNN/Cn: <comportamento>\"\"\"'; nome test_spec_<dom>_nnn_cn_<descricao> (registre o marker spec com strict)"
+  },
+  "tdd": {
+    "logica": "funcoes, classes de dominio, servicos: test-first",
+    "casca": "views/templates/CLI de fiacao: teste de integracao ate o commit-gate; regra de negocio sobe para funcao testavel",
+    "stub_red": "a funcao existe e devolve valor errado; NotImplementedError ou ImportError nao contam como RED"
+  },
+  "erro_idioma": "Falha de negocio esperada: Enum/dataclass de desfecho consumido com match + assert_never sob mypy/pyright estrito. Excecao so para bug/infra.",
+  "segredos_extra": [".env*", ".pypirc", ".netrc", "*.pem"],
+  "calibracao": [
+    "carga: teste que importa modulo inexistente -> 'sdd test tests/test_sonda.py --sonda carga' (esperado: carga, pela fase de coleta)",
+    "red: assert 1 == 2 -> '--sonda red' (esperado: falha)",
+    "zero: arquivo de teste sem nenhuma funcao test_ -> 'sdd test tests/test_sonda.py --sonda zero' (esperado: zero; a coleta sai 5, ou 4 para node id inexistente)"
+  ],
+  "notas": [
+    "Sem pytest, use as alternativas unittest (classificacao so por exit code e padroes; o goal avisa que o RED nao teve relatorio).",
+    "Testado em 12/10/2026 com Python 3.12 + pytest/ruff num venv (cobaia do kit)."
+  ]
+}

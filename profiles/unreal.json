@@ -1,0 +1,51 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit (rascunho NAO testado; calibrado=false ate as sondas passarem no projeto). {UE_ROOT}, {UPROJECT} e {PROJETO} vem de .sdd/profile.local.json. O Live Coding recusa build externo com o editor aberto: feche o editor ou desligue o Live Coding. A passagem de -ExecCmds com espacos e ';' por PowerShell nao foi verificada: confira na sonda.",
+  "perfil": "unreal",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "light",
+  "env": {},
+  "vars": { "UE_ROOT": "", "UPROJECT": "", "PROJETO": "" },
+  "projeto": { "specs_root": "Docs/Specs", "spec_lint": "warn", "riscos": [], "riscos_com_fonte": [] },
+  "paths": {
+    "isentos_frescor": ["Config/DefaultEditor*.ini", "Saved/**"],
+    "gerados": ["Binaries/", "Intermediate/", "Saved/", "DerivedDataCache/", "Plugins/**/Binaries/", "Plugins/**/Intermediate/", ".vs/", "*.sln", "*.VC.db", "compile_commands.json"]
+  },
+  "fix": [],
+  "light": [
+    { "nome": "Build Editor (incremental)", "cmd": ["{UE_ROOT}/Engine/Build/BatchFiles/Build.bat", "{PROJETO}Editor", "Win64", "Development", "-Project={UPROJECT}", "-WaitMutex"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Automation (projeto)", "cmd": ["{UE_ROOT}/Engine/Binaries/Win64/UnrealEditor-Cmd.exe", "{UPROJECT}", "-ExecCmds=Automation RunTest {PROJETO};Quit", "-unattended", "-nullrhi", "-nosplash", "-stdout"] }
+  ],
+  "test": {
+    "alvo": "caminho hierarquico do teste (Jogo.Vida.LimitaEmZero); varios unidos por '+'",
+    "build": ["{UE_ROOT}/Engine/Build/BatchFiles/Build.bat", "{PROJETO}Editor", "Win64", "Development", "-Project={UPROJECT}", "-WaitMutex"],
+    "run": ["{UE_ROOT}/Engine/Binaries/Win64/UnrealEditor-Cmd.exe", "{UPROJECT}", "-ExecCmds=Automation RunTest {alvo};Quit", "-unattended", "-nullrhi", "-nosplash", "-stdout", "-ReportExportPath={relatorio_dir}"],
+    "relatorio": "unreal-json",
+    "padroes_carga": [": (fatal )?error C\\d{4}:", ": (fatal )?error LNK\\d{4}:", "Unable to build while Live Coding is active"],
+    "padroes_zero": []
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "// SPEC-<DOM>-NNN/Cn  (comentario na linha acima do IMPLEMENT_SIMPLE_AUTOMATION_TEST / It(...); nao ponha a tag no PrettyName: '.' separa niveis)"
+  },
+  "tdd": {
+    "logica": "regras de jogo em C++ testavel (structs/classes puras ou UObject sem UWorld): test-first com Automation Spec ou Low Level Tests",
+    "casca": "Actors/Components/Blueprints de fiacao, mapas, assets: Functional Test ou Data Validation ate o commit; regra de jogo em Blueprint nao e casca (sobe para C++ ou vira Excecao aprovada)",
+    "stub_red": "a funcao existe e devolve valor errado"
+  },
+  "erro_idioma": "TValueOrError/UENUM de desfecho + switch com teste por variante.",
+  "segredos_extra": [],
+  "calibracao": [
+    "carga: teste que nao compila -> 'sdd test Jogo.Sonda --sonda carga' (esperado: carga, pela fase build)",
+    "red: TestEqual(1, 2) -> '--sonda red' (esperado: falha, lida no index.json)",
+    "zero: caminho que nao existe -> '--sonda zero' (esperado: zero)"
+  ],
+  "notas": [
+    "Exit code do UnrealEditor-Cmd nao e contrato documentado: o perfil le o index.json do -ReportExportPath (campos succeeded/failed observados, nao documentados pela Epic).",
+    "Blueprints (.uasset) nao sao revisaveis por diff: o verificador lista como 'nao verificavel'.",
+    "Commit-gate light (build incremental); Automation completa no goal. Git LFS obrigatorio para .uasset/.umap."
+  ]
+}
