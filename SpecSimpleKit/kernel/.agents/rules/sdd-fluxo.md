@@ -14,6 +14,7 @@ description: Fluxo spec-driven do kit SDD — backlog, níveis, etapas e portõe
 |---|---|
 | Ideia | `<specs>/backlog/NN - Tema.md` (sem `NN` = provisório até o usuário numerar) |
 | Change (o quê, porquê, como e tasks) | `<specs>/changes/NN-slug/change.md` |
+| Origem da change (item do backlog que a gerou) | `<specs>/changes/NN-slug/origem/`, movido do backlog ao abrir |
 | Evidência e verificação (só o motor grava) | `evidence.jsonl` e `verify.md`, na pasta da change |
 | Spec viva (comportamento atual) | `<specs>/capabilities/<capacidade>/spec.md` |
 | Registro de capacidades e IDs | `<specs>/capabilities/_index.md` |

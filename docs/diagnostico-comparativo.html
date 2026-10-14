@@ -102,7 +102,7 @@ html { scroll-behavior: smooth; }
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">sdd-kit 0.1.0 · atualizado em 12/10/2026</span>
+    <span class="eyebrow">SpecSimpleKit 0.1.0 · atualizado em 12/10/2026</span>
     <h1>Diagnóstico comparativo da metodologia SDD</h1>
     <p class="lede">O método do ERP é competitivo nas ideias e mais rigoroso que os frameworks públicos na verificação. Do jeito que estava, porém, ele era específico demais, caro demais e novo demais para ser copiado para outros projetos.</p>
     <p class="meta">Base: 10 relatórios de levantamento (somente leitura) do repositório ERP PDV D+, 5 críticos independentes, verificação na documentação oficial em 11/10/2026 e os testes do kit em 12/10/2026.</p>
@@ -230,7 +230,7 @@ html { scroll-behavior: smooth; }
     <div class="scroll wide">
       <table>
         <thead>
-          <tr><th>Critério</th><th>sdd-kit</th><th>Spec Kit</th><th>OpenSpec</th><th>Kiro</th><th>BMAD</th><th>aiox-core</th><th>superpowers</th></tr>
+          <tr><th>Critério</th><th>SpecSimpleKit</th><th>Spec Kit</th><th>OpenSpec</th><th>Kiro</th><th>BMAD</th><th>aiox-core</th><th>superpowers</th></tr>
         </thead>
         <tbody>
           <tr><td>Licença e maturidade</td><td>próprio, v0.1.0</td><td class="num">MIT · 140.820★ · v1.1.3 (09/10)</td><td class="num">MIT · 71.637★ · v1.14.1 (06/10)</td><td>proprietário, pago</td><td class="num">MIT · 54.032★ · v6.12.2</td><td class="num">MIT composto · 3.127★ · v5.4.1 (15/08)</td><td class="num">MIT · 297.574★ · v7.0.0</td></tr>
@@ -276,7 +276,7 @@ html { scroll-behavior: smooth; }
     <h2>Problema medido no ERP e resposta no kit</h2>
     <div class="scroll">
       <table>
-        <thead><tr><th>Problema no ERP</th><th>Resposta no sdd-kit</th></tr></thead>
+        <thead><tr><th>Problema no ERP</th><th>Resposta no SpecSimpleKit</th></tr></thead>
         <tbody>
           <tr><td>"Continue" no chat valia como portão</td><td><code>sdd approve NN P1|P2</code> só roda no terminal do usuário, com código digitado; a IA é recusada.</td></tr>
           <tr><td>RED sem lastro: pipe e hook do Antigravity</td><td><code>sdd test &lt;alvo&gt;</code> grava a própria evidência e separa <code>falha</code>, <code>passou</code>, <code>carga</code>, <code>zero</code>, <code>erro</code> e <code>inconsistente</code> pelo relatório da stack.</td></tr>
@@ -365,7 +365,7 @@ html { scroll-behavior: smooth; }
     </ul>
     <h3>Próximos passos</h3>
     <ul class="clean prose">
-      <li>Mover o <code>sdd-kit</code> para um repositório próprio, com a tag <code>v0.1.0</code>.</li>
+      <li>Marcar a tag <code>v0.1.0</code> no repositório próprio (já criado).</li>
       <li><code>install.ps1 maquina -Aplicar</code> e o teste de canário: a IA tenta <code>git push --force</code> e a IDE tem de pedir confirmação.</li>
       <li>Primeiro piloto em Node, Python ou .NET: bootstrap, calibração e 1 change pequena, medindo o atrito.</li>
       <li>Teste do OpenSpec antes do segundo projeto.</li>
@@ -401,6 +401,6 @@ html { scroll-behavior: smooth; }
       <a href="https://github.com/SynkraAI/aiox-core">aiox-core</a> ·
       <a href="https://github.com/obra/superpowers">superpowers</a>
     </p>
-    <p>Fonte desta página: <span class="mono">sdd-kit/docs/diagnostico-comparativo.html</span>. Decisão e protocolo de uso: <span class="mono">Metodologia SDD.ai</span>, ao lado da pasta do kit.</p>
+    <p>Fonte desta página: <span class="mono">SDD-TDDkit/docs/diagnostico-comparativo.html</span>. Decisão e protocolo de uso: <span class="mono">Metodologia SDD.ai</span>, na raiz do repositório.</p>
   </footer>
 </div>

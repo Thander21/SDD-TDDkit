@@ -45,6 +45,9 @@ Pré-condição: `Prontidão: Pronto` e nenhuma pergunta sem resposta.
   próximos números livres em `backlog/`, `changes/` e `concluidas/`.
 - Cada RF/RN vira cenário `SPEC-<DOM>-NNN/Cn`. Pergunta nova vai para
   `## Perguntas em aberto` da change. Registre a change em `## Encaminhamento`.
+- Mova o item do backlog para `changes/NN-slug/origem/` (`git mv` se
+  versionado): a change guarda a documentação que a gerou. Item com várias
+  features fica na pasta da primeira; as seguintes citam esse caminho.
 
 **Parada:** a IA nunca muda a change para `Approved`. Diga ao usuário que,
 com as perguntas respondidas, ele aprova com `sdd approve NN P1`.

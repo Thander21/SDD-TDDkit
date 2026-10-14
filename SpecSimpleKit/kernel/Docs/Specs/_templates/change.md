@@ -13,7 +13,7 @@ impact:
 
 # CHG-NNN — <título>
 
-> **Origem:** <item do backlog>. **Regra:** `.agents/rules/sdd-fluxo.md`.
+> **Origem:** `origem/<item do backlog>.md` (movido do backlog). **Regra:** `.agents/rules/sdd-fluxo.md`.
 > Títulos lidos pelo motor (não renomeie): Perguntas em aberto, Análise
 > pré-implementação, Tasks, Pós-GOAL, Exceções, Aprovações. `status`,
 > `base_ref` e Aprovações são gravados só pelo `sdd approve` do usuário.

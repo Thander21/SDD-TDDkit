@@ -5,10 +5,10 @@
 > **Formato:** Markdown. A extensão `.ai` é a do Adobe Illustrator no Windows:
 > para abrir com preview, use um editor de texto ou renomeie para `.md`.
 >
-> **Fonte única do método:** a pasta `sdd-kit/` ao lado deste arquivo. Este
+> **Fonte única do método:** o repositório SDD-TDDkit, em cuja raiz fica este arquivo; a ferramenta (SpecSimpleKit) fica em `SpecSimpleKit/`. Este
 > documento traz a decisão, o diagnóstico, o mapa do que é criado em cada
 > projeto e o protocolo de uso. Ele não repete as regras; quando houver
-> diferença, vale o `sdd-kit/kernel/`.
+> diferença, vale o `SpecSimpleKit/kernel/`.
 
 ---
 
@@ -42,7 +42,7 @@
 
 ## 1. Decisão
 
-**O caminho: kit pequeno, versionado e instalável (`sdd-kit`), com uma skill
+**O caminho: kit pequeno, versionado e instalável (SpecSimpleKit), com uma skill
 de bootstrap que preenche só o contexto de cada projeto.**
 
 Não adotar framework externo como base. O OpenSpec fica como spike de 1 a 2
@@ -151,8 +151,8 @@ automação era um motor próprio, caro de manter. O kit corrige isso
 
 | Camada | Conteúdo | Dono | Atualização |
 |---|---|---|---|
-| **Núcleo** (`sdd-kit/kernel`) | regras `sdd-core` (sempre ativa), `sdd-fluxo` e `sdd-revisao`; moldes; skills; subagente verificador; motor `tools/sdd/sdd.ps1` | kit | `install.ps1 update`, com lock sha256 |
-| **Perfil de stack** (`sdd-kit/profiles`) | comandos de gate, teste por alvo, relatório, padrões de carga/zero, tag de rastreio, TDD da stack, idioma de erro, sondas | projeto, depois da instalação | à mão + `sdd calibrate` |
+| **Núcleo** (`SpecSimpleKit/kernel/`) | regras `sdd-core` (sempre ativa), `sdd-fluxo` e `sdd-revisao`; moldes; skills; subagente verificador; motor `tools/sdd/sdd.ps1` | kit | `install.ps1 update`, com lock sha256 |
+| **Perfil de stack** (`SpecSimpleKit/profiles/`) | comandos de gate, teste por alvo, relatório, padrões de carga/zero, tag de rastreio, TDD da stack, idioma de erro, sondas | projeto, depois da instalação | à mão + `sdd calibrate` |
 | **Projeto** | seção do projeto no `AGENTS.md`, riscos, regras de domínio, specs | projeto | nunca tocada pelo kit |
 | **Máquina** | guard de comando, guard de edição, permissões do Claude | você | `install.ps1 maquina -Aplicar` |
 
@@ -304,14 +304,14 @@ O `sdd goal` termina sempre com a lista **"Não verificado por máquina"**.
 
 ## 10. Manutenção do kit
 
-- **Repositório próprio.** Mova `sdd-kit/` para um repositório git próprio (ex.:
-  `C:\_Projetos\sdd-kit`) e marque cada versão com tag. O lock de cada projeto
-  registra a origem e o commit.
-- **Lições de método** chegam pelo `sdd-kit/INBOX.md` (skill `learn`, destino
+- **Repositório próprio:** https://github.com/Thander21/SDD-TDDkit. Clone num
+  lugar fixo (ex.: `C:\_Projetos\SDD-TDDkit`) e marque cada versão com tag. O
+  lock de cada projeto registra a origem e o commit.
+- **Lições de método** chegam pelo `INBOX.md` do kit (skill `learn`, destino
   "upstream do kit"). Nunca edite arquivo gerenciado dentro de um projeto: o
   `check` acusa, e o `update` gera `.kitnew` ou recusa.
 - **Releases** no máximo uma vez por mês, com teste para cada mudança no
-  motor: `tests/run_all.ps1`, com 226 asserts rodados em cada interpretador
+  motor: `SpecSimpleKit/tests/run_all.ps1`, com 226 asserts rodados em cada interpretador
   na v0.1.0, incluindo as 15 regressões da verificação independente.
 - **Orçamento de tamanho:** `sdd-core` até 5 KB, `sdd-fluxo` até 14 KB e o
   Markdown do núcleo até 40 KB (hoje são 4,1, 9,6 e cerca de 36 KB).
@@ -338,7 +338,7 @@ O `sdd goal` termina sempre com a lista **"Não verificado por máquina"**.
 
 ## 12. Próximos passos, priorizados
 
-1. Mover `sdd-kit/` para um repositório próprio, `git init` e tag `v0.1.0`.
+1. Marcar a tag `v0.1.0` no repositório próprio (já criado).
 2. `install.ps1 maquina -Aplicar` e o teste de canário nas duas IDEs: a IA tenta
    `git push --force` num repositório de teste, e a IDE tem de pedir
    confirmação.
@@ -421,4 +421,4 @@ Os arquivos antigos podem ficar como histórico: nenhum deles é lido pelo kit.
     dev.epicgames.com (Automation, Gauntlet).
 - **Testes do kit em 12/10/2026, nesta máquina** (Windows 11, PowerShell
   5.1.26100 e 7.6.6, Node 24.19, Python 3.12, .NET 9.0.318 e Dart 3.13.5):
-  `sdd-kit/tests/run_all.ps1`.
+  `SpecSimpleKit/tests/run_all.ps1`.

@@ -3,18 +3,19 @@
 # Instala, confere e atualiza o kit SDD num projeto, e instala o guard da
 # maquina. Compativel com Windows PowerShell 5.1 e PowerShell 7. ASCII.
 #
+#   install.ps1                (assistente: pergunta a pasta e o perfil)
 #   install.ps1 projeto -Destino <repo> -Perfil <node|python|dotnet|flutter|rust|unity|unreal>
 #   install.ps1 check   -Destino <repo>
 #   install.ps1 update  -Destino <repo> [-Forcar]
 #   install.ps1 maquina [-Aplicar] [-Casa <pasta; padrao = perfil do usuario>]
 #
 # Regras: arvore git limpa antes de instalar/atualizar (o diff e a revisao e
-# o rollback); plano completo antes de gravar (nunca sucesso parcial); a
+# o rollback; no assistente, arvore suja so pede confirmacao); plano completo antes de gravar (nunca sucesso parcial); a
 # camada do projeto (AGENTS.md fora dos marcadores, profile.json, regras de
 # dominio) nunca e sobrescrita; executavel editado no projeto = FAIL.
 # =====================================================================
 param(
-  [Parameter(Position = 0, Mandatory = $true)][ValidateSet('projeto', 'check', 'update', 'maquina')][string]$Acao,
+  [Parameter(Position = 0)][ValidateSet('projeto', 'check', 'update', 'maquina')][string]$Acao,
   [string]$Destino,
   [string]$Perfil,
   [switch]$Forcar,
@@ -28,6 +29,8 @@ $Kernel = Join-Path $Kit 'kernel'
 $Utf8 = New-Object System.Text.UTF8Encoding $false
 $MarcaIni = '<!-- sdd-kit:begin -->'
 $MarcaFim = '<!-- sdd-kit:end -->'
+# Sem acao = assistente: pergunta o que faltar e nao trava em arvore suja.
+$Assistente = -not $Acao
 
 function Write-L([string]$T) { [Console]::Out.WriteLine($T) }
 
@@ -55,20 +58,81 @@ function Invoke-G([string]$Dir, [string[]]$A, [switch]$PermitirFalha) {
   return [pscustomobject]@{ Codigo = $c; Out = $out }
 }
 
+function Read-Resposta([string]$Pergunta, [string]$Padrao) {
+  $txt = $Pergunta
+  if ($Padrao) { $txt += " [$Padrao]" }
+  $r = Read-Host $txt
+  if ([string]::IsNullOrWhiteSpace($r)) { return $Padrao }
+  return $r.Trim().Trim('"').Trim("'")
+}
+
+function Read-SimNao([string]$Pergunta, [bool]$Padrao) {
+  $op = 's/N'
+  if ($Padrao) { $op = 'S/n' }
+  $r = Read-Host "$Pergunta [$op]"
+  if ([string]::IsNullOrWhiteSpace($r)) { return $Padrao }
+  return ($r.Trim() -match '^(s|sim|y|yes)$')
+}
+
 function Resolve-Destino {
+  if (-not $Destino -and $Assistente) {
+    # Padrao: a pasta atual, se o assistente foi chamado de dentro do projeto.
+    $aqui = (Get-Location).Path
+    if ([System.IO.Path]::GetFullPath($aqui).TrimEnd('\', '/') -eq [System.IO.Path]::GetFullPath($Kit).TrimEnd('\', '/')) { $aqui = '' }
+    $script:Destino = Read-Resposta 'Pasta do projeto' $aqui
+  }
   if (-not $Destino) { throw 'informe -Destino <pasta do repositorio>' }
   $full = [System.IO.Path]::GetFullPath($Destino)
+  if (-not (Test-Path -LiteralPath $full -PathType Container)) { throw "pasta nao encontrada: $full" }
   $r = Invoke-G $full @('rev-parse', '--show-toplevel') -PermitirFalha
-  if ($r.Codigo -ne 0) { throw "$full nao e um repositorio git (rode git init antes)" }
+  if ($r.Codigo -ne 0) {
+    if (-not ($Assistente -and (Read-SimNao "$full nao e um repositorio git. Rodar git init?" $true))) { throw "$full nao e um repositorio git (rode git init antes)" }
+    Invoke-G $full @('init') | Out-Null
+    $r = Invoke-G $full @('rev-parse', '--show-toplevel')
+  }
   return [System.IO.Path]::GetFullPath(($r.Out | Select-Object -Last 1))
 }
 
-function Assert-ArvoreLimpa([string]$Raiz) {
+# Sugere o perfil pelos arquivos da raiz; Unity antes de .NET (gera .sln/.csproj).
+function Get-PerfilSugerido([string]$Raiz) {
+  $tem = { param($Rel) Test-Path -LiteralPath (Join-Path $Raiz $Rel) }
+  $ext = @(Get-ChildItem -LiteralPath $Raiz -File -ErrorAction SilentlyContinue | ForEach-Object { $_.Extension.ToLowerInvariant() })
+  if (& $tem 'pubspec.yaml') { return 'flutter' }
+  if (& $tem 'Cargo.toml') { return 'rust' }
+  if (& $tem 'ProjectSettings/ProjectVersion.txt') { return 'unity' }
+  if ($ext -contains '.uproject') { return 'unreal' }
+  if ($ext -contains '.sln' -or $ext -contains '.slnx' -or $ext -contains '.csproj' -or $ext -contains '.fsproj') { return 'dotnet' }
+  foreach ($f in @('pyproject.toml', 'requirements.txt', 'setup.py')) { if (& $tem $f) { return 'python' } }
+  if (& $tem 'package.json') { return 'node' }
+  return ''
+}
+
+function Resolve-Perfil([string]$Raiz) {
+  if ($Perfil -or -not $Assistente) { return }
+  $nomes = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'profiles') -Filter '*.json' | ForEach-Object { $_.BaseName } | Sort-Object)
+  $sug = Get-PerfilSugerido $Raiz
+  Write-L 'Perfis de stack:'
+  for ($i = 0; $i -lt $nomes.Count; $i++) {
+    $marca = ''
+    if ($nomes[$i] -eq $sug) { $marca = '  <- detectado' }
+    Write-L ("  {0}. {1}{2}" -f ($i + 1), $nomes[$i], $marca)
+  }
+  $r = Read-Resposta 'Perfil (numero ou nome)' $sug
+  if ($r -match '^\d+$' -and [int]$r -ge 1 -and [int]$r -le $nomes.Count) { $r = $nomes[[int]$r - 1] }
+  $script:Perfil = $r
+}
+
+function Assert-ArvoreLimpa([string]$Raiz, [bool]$PadraoAssistente = $true) {
   if ($SemArvoreLimpa) { return }
   $s = Invoke-G $Raiz @('status', '--porcelain')
-  if (@($s.Out | Where-Object { $_.Trim() -ne '' }).Count -gt 0) {
-    throw 'a arvore git do projeto nao esta limpa: faca commit ou stash antes (o diff do kit precisa ficar revisavel)'
+  $sujos = @($s.Out | Where-Object { $_.Trim() -ne '' })
+  if ($sujos.Count -eq 0) { return }
+  if ($Assistente) {
+    Write-L ("  ! a arvore git tem {0} arquivo(s) pendente(s): o diff do kit vai se misturar com eles." -f $sujos.Count)
+    if (Read-SimNao '  Continuar mesmo assim?' $PadraoAssistente) { return }
+    throw 'cancelado: faca commit ou stash e rode de novo'
   }
+  throw 'a arvore git do projeto nao esta limpa: faca commit ou stash antes (o diff do kit precisa ficar revisavel; para testar, use -SemArvoreLimpa ou o assistente sem parametros)'
 }
 
 # Arquivos do nucleo (relativos), sem o bloco do AGENTS.
@@ -194,6 +258,7 @@ function Write-Lock([string]$Raiz, [hashtable]$Hashes, [string]$HashBloco, [stri
 # ---------------------------------------------------------------------
 function Invoke-Projeto {
   $raiz = Resolve-Destino
+  Resolve-Perfil $raiz
   if (-not $Perfil) { throw 'informe -Perfil (veja a pasta profiles/)' }
   $arqPerfil = Join-Path $Kit "profiles/$Perfil.json"
   if (-not (Test-Path -LiteralPath $arqPerfil)) { throw "perfil desconhecido: $Perfil" }
@@ -251,9 +316,8 @@ function Invoke-Projeto {
   Write-Lock $raiz $hashes (Get-Sha $bloco) $Perfil
   Write-L ("INSTALADO sdd-kit {0} em {1} (perfil {2}; {3} arquivos gerenciados; {4} linhas no .gitignore)." -f (Get-KitVersao), $raiz, $Perfil, $hashes.Count, $n)
   Write-L 'Proximos passos (no projeto):'
-  Write-L '  1. Peca a IA: "rode a skill sdd-bootstrap" (descobre, pergunta, preenche o AGENTS.md e calibra o perfil).'
-  Write-L '  2. powershell -File tools/sdd/sdd.ps1 install-hook'
-  Write-L '  3. Revise o diff e faca o commit do bootstrap.'
+  Write-L '  1. Abra o projeto na IDE e peca a IA: "rode a skill sdd-bootstrap" (descobre, pergunta, preenche o AGENTS.md, calibra o perfil e instala o pre-commit).'
+  Write-L '  2. Revise o diff e faca o commit do bootstrap.'
   return 0
 }
 
@@ -287,7 +351,7 @@ function Invoke-Update {
   $raiz = Resolve-Destino
   $lockTxt = Read-T (Join-Path $raiz '.sdd/kit.lock.json')
   if ($null -eq $lockTxt) { throw 'kit nao instalado: use projeto' }
-  Assert-ArvoreLimpa $raiz
+  Assert-ArvoreLimpa $raiz $false
   $ativas = @(Get-ProjetoAtivo $raiz)
   if ($ativas.Count -and -not $Forcar) { throw ("ha change em implementacao (" + ($ativas -join ', ') + "): atualize depois do fecho ou use -Forcar") }
   $lock = $lockTxt | ConvertFrom-Json
@@ -435,7 +499,29 @@ function Invoke-Maquina {
   return 0
 }
 
+# Assistente: guard da maquina (se faltar) e depois instala ou atualiza o projeto.
+function Invoke-Assistente {
+  Write-L ("SpecSimpleKit {0} - assistente de instalacao (Enter aceita o padrao entre colchetes)" -f (Get-KitVersao))
+  if (-not (Test-Path -LiteralPath (Join-Path (Get-Casa) '.sdd-kit/hooks/guard.ps1'))) {
+    Write-L 'O guard da maquina (uma vez por maquina) ainda nao esta instalado: ele faz a IDE pedir confirmacao'
+    Write-L 'antes de comandos perigosos e mescla permissoes em ~/.claude/settings.json (com backup).'
+    if (Read-SimNao 'Instalar o guard da maquina agora?' $false) {
+      $script:Aplicar = $true
+      if ((Invoke-Maquina) -ne 0) { return 1 }
+      Write-L ''
+    }
+  }
+  $raiz = Resolve-Destino
+  if (Test-Path -LiteralPath (Join-Path $raiz '.sdd/kit.lock.json')) {
+    Write-L "O kit ja esta instalado em $raiz."
+    if (-not (Read-SimNao 'Atualizar para a versao deste clone?' $true)) { return 0 }
+    return (Invoke-Update)
+  }
+  return (Invoke-Projeto)
+}
+
 try {
+  if ($Assistente) { exit (Invoke-Assistente) }
   switch ($Acao) {
     'projeto' { $c = Invoke-Projeto }
     'check' { $c = Invoke-Check }

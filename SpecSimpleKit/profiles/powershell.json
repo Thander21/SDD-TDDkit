@@ -1,0 +1,57 @@
+{
+  "$comentario": "Perfil de stack do sdd-kit (RASCUNHO: calibrado=false ate as sondas passarem no projeto). Nasceu para o proprio SpecSimpleKit (dogfooding). Scripts PowerShell compativeis com 5.1 e 7; testes sao scripts tests/test_*.ps1 que imprimem 'N/M asserts ok' e saem com exit 1 em falha. Sem relatorio estruturado ainda: a classificacao do sdd test e por exit code + padroes.",
+  "perfil": "powershell",
+  "versao_perfil": 1,
+  "calibrado": false,
+  "commit_gate": "full",
+  "env": { "NO_COLOR": "1" },
+  "vars": {},
+  "projeto": {
+    "specs_root": "Docs/Specs",
+    "spec_lint": "warn",
+    "riscos": [],
+    "riscos_com_fonte": []
+  },
+  "paths": {
+    "isentos_frescor": [],
+    "gerados": []
+  },
+  "fix": [],
+  "light": [
+    { "nome": "Sintaxe dos .ps1", "cmd": ["powershell", "-NoProfile", "-Command", "$n = 0; foreach ($f in Get-ChildItem -Recurse -File -Filter *.ps1 | Where-Object { $_.FullName -notmatch '[\\\\/]\\.git[\\\\/]' }) { $t = $null; $e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$t, [ref]$e); foreach ($x in $e) { Write-Output ('{0}:{1}: {2}' -f $f.FullName, $x.Extent.StartLineNumber, $x.Message); $n++ } }; exit [int]($n -gt 0)"] },
+    { "nome": "Scripts em ASCII", "cmd": ["powershell", "-NoProfile", "-Command", "$n = 0; foreach ($f in Get-ChildItem -Recurse -File -Include *.ps1, *.cmd | Where-Object { $_.FullName -notmatch '[\\\\/]\\.git[\\\\/]' }) { $b = [System.IO.File]::ReadAllBytes($f.FullName); if (@($b | Where-Object { $_ -gt 127 }).Count) { Write-Output ('nao-ASCII: ' + $f.FullName); $n++ } }; exit [int]($n -gt 0)"] }
+  ],
+  "full": [
+    "@light",
+    { "nome": "Testes", "cmd": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tests/run_all.ps1"] }
+  ],
+  "test": {
+    "alvo": "caminho de um script de teste (ex.: tests/test_install.ps1). Um cenario por script ou filtro por parametro do proprio script.",
+    "build": ["powershell", "-NoProfile", "-Command", "$t = $null; $e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '{alvo}').Path, [ref]$t, [ref]$e); foreach ($x in $e) { Write-Output ('ParserError: ' + $x.Message) }; exit [int](@($e).Count -gt 0)"],
+    "run": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "{alvo}"],
+    "relatorio": "",
+    "padroes_carga": ["ParserError", "is not recognized as", "CommandNotFoundException", "Cannot find path"],
+    "padroes_zero": ["(?m)^0/0 asserts"]
+  },
+  "rastreio": {
+    "regex": "SPEC-[A-Z]{2,8}-\\d{3}/C\\d+",
+    "molde": "Assert-Igual '[SPEC-<DOM>-NNN/Cn] <comportamento observavel>' $obtido $esperado  # a tag inteira no nome do assert"
+  },
+  "tdd": {
+    "logica": "funcoes do motor, do instalador e dos guards: test-first por script em tests/",
+    "casca": "mensagens de texto e ajuda podem nascer antes; o teste vem ate o commit-gate",
+    "stub_red": "a funcao existe e devolve valor errado (nao lance 'nao implementado': vira falha que nao e assercao)"
+  },
+  "erro_idioma": "Falha de negocio esperada: objeto [pscustomobject]@{ Ok = $false; Motivo = 'x' } ou codigo de saida documentado + mensagem 'ERRO: ...'; excecao (throw) so para bug/infra.",
+  "segredos_extra": ["*.pfx", "*.pem", ".env*"],
+  "calibracao": [
+    "carga: crie tests/sonda_carga.ps1 com erro de sintaxe (ex.: 'function {') e rode 'sdd test tests/sonda_carga.ps1 --sonda carga' (esperado: carga)",
+    "red: tests/sonda_red.ps1 que carrega helpers.ps1, faz Assert-Igual 'x' 1 2 e chama o resumo -> 'sdd test tests/sonda_red.ps1 --sonda red' (esperado: falha)",
+    "zero: tests/sonda_zero.ps1 que carrega helpers.ps1 e so chama o resumo, sem assert -> 'sdd test tests/sonda_zero.ps1 --sonda zero' (esperado: zero)",
+    "apague os arquivos de sonda depois; o resultado fica em .sdd/state"
+  ],
+  "notas": [
+    "Rascunho criado em 12/10/2026 para o dogfooding do SpecSimpleKit. Sem relatorio JUnit, o goal anota 'RED classificado so pelo exit code'; emitir JUnit no helpers.ps1 e item de backlog.",
+    "O gate full roda a suite inteira do kit (lenta: instala em repositorios temporarios). Rode a partir da pasta onde estao os tests/ (ajuste o caminho no profile.json do projeto)."
+  ]
+}

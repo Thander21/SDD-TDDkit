@@ -1,4 +1,24 @@
-# Changelog do sdd-kit
+# Changelog do SpecSimpleKit
+
+## Não lançado
+
+- A ferramenta passa a se chamar SpecSimpleKit e mora em `SpecSimpleKit/`
+  dentro do repositório SDD-TDDkit, cuja raiz é o projeto de desenvolvimento
+  (com o próprio método). Identificadores técnicos seguem `sdd-kit`, para
+  não quebrar os projetos instalados.
+- README com início rápido: `git clone`, `instalar.cmd` e bootstrap.
+- `install.ps1` sem parâmetros vira assistente (`instalar.cmd` chama com
+  `-ExecutionPolicy Bypass`): pergunta a pasta (padrão: a atual), oferece
+  `git init`, detecta o perfil pela stack, oferece o guard da máquina na
+  primeira vez e o update quando o kit já está instalado. Árvore suja só pede
+  confirmação. O modo com parâmetros não mudou.
+
+- Ao abrir uma change, o item do backlog que a gerou é movido para
+  `changes/NN-slug/origem/` (fluxo §1, skill `backlog-refinement` modo
+  abrir, molde da change): a change guarda a documentação de origem.
+
+- `docs/como-usar-fluxo.md`: guia de uso pelo chat (fluxo do pedido ao
+  código pronto, pastas, portões e o que dizer em cada etapa).
 
 ## 0.1.0 — 12/10/2026
 
