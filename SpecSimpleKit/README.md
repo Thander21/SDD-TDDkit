@@ -1,125 +1,175 @@
 # SpecSimpleKit
 
-Mini-framework para desenvolver com IA de forma guiada: **spec antes do
-código (SDD), teste antes da implementação (TDD)** e portões em que só você
-aprova. Funciona no chat do Claude Code e do Antigravity, em projetos de
-qualquer stack. Você conversa; a IA conduz cada etapa e roda os comandos; o
-motor do kit confere e grava a evidência.
+**Um jeito simples de programar com IA sem perder o controle.** Você conversa
+com a IA no chat (Claude Code ou Antigravity). Ela não sai escrevendo código:
+primeiro combina com você **o que** vai ser feito, escreve os testes que provam
+isso, e só então implementa. Você decide nos pontos importantes; o kit confere
+o resto.
 
-Versão em [`VERSION`](VERSION) · histórico em [`CHANGELOG.md`](CHANGELOG.md) ·
-desenvolvido no repositório [SDD-TDDkit](../README.md).
+Feito para quem está começando ou nunca usou desenvolvimento orientado a
+especificação e quer algo fácil, guiado passo a passo, em projetos de qualquer
+linguagem.
 
-> **Estado (0.1.0, em desenvolvimento):** a aprovação pelo chat já funciona.
-> O início só pelo chat, o guard só no projeto e o kit como pasta dentro do
-> projeto estão em andamento (changes 01 e 05 e backlog no repositório de
-> desenvolvimento). Até lá, a instalação é pelo instalador abaixo, e o passo
-> `maquina` grava configuração global: **não use** esse passo por enquanto.
+> **Versão 0.1.0, em desenvolvimento.** Já funciona: o fluxo completo e a
+> aprovação pelo chat. Ainda em construção: começar sem rodar nenhum comando,
+> e a proteção (guard) instalada só no projeto. Veja "Limitações" no fim.
 
-## Como funciona, em uma figura
+## O que é SDD e TDD, em poucas palavras
 
-```text
- você (chat)                     IA                            motor (tools/sdd/sdd.ps1)
- ideia ─────────────────► item no backlog
- "refine o item NN" ────► requisitos conferidos no código + perguntas
- "item NN Pronto" ──────► change em Draft (cenários DADO/QUANDO/ENTÃO)
- "aprovo P1 da change NN" ───────────────────────────────► sdd approve NN P1 --frase
-                          plano, tasks RED → GREEN, análise
- "aprovo P2 da change NN" ───────────────────────────────► sdd approve NN P2 --frase
-                          teste falha (RED) → código → passa (GREEN) ──► sdd test (grava evidência)
-                          validate, verificador independente, goal ────► GOAL PASS
-                          revisão, learn, archive na spec viva
- commit (seu)
+Duas práticas antigas e conhecidas, que o kit combina e automatiza:
+
+- **SDD — Spec-Driven Development** (desenvolvimento orientado a
+  especificação). Antes do código existe uma **spec**: um texto curto que diz
+  o que o sistema deve fazer, escrito como exemplos de uso. Cada exemplo é um
+  **cenário** no formato *DADO / QUANDO / ENTÃO* (vem do **BDD — Behavior-Driven
+  Development**):
+
+  > **DADO** um carrinho com 2 itens · **QUANDO** o cliente remove 1 item ·
+  > **ENTÃO** o total mostra só o item que ficou
+
+  A spec é o acordo entre você e a IA. Se não está na spec, não é feito.
+
+- **TDD — Test-Driven Development** (desenvolvimento orientado a teste). Para
+  cada cenário, a IA escreve **primeiro o teste**, roda e vê o teste **falhar**
+  (fase **RED**, vermelho). Só depois escreve o código e roda de novo até
+  **passar** (fase **GREEN**, verde). Por fim melhora o código sem mudar o
+  comportamento (**REFACTOR**). Isso prova que o teste testa algo de verdade e
+  que o código faz o que a spec pede.
+
+**Por que isso ajuda com IA:** a IA é rápida, mas pode inventar, esquecer um
+caso ou dizer "pronto" sem estar pronto. Com spec e teste antes, você tem um
+critério objetivo: o trabalho só fecha quando cada cenário tem teste que falhou
+antes e passa depois — e o kit confere isso sozinho.
+
+## O que o kit faz por você
+
+| Você | A IA, guiada pelo kit | O motor do kit (`tools/sdd/sdd.ps1`) |
+|---|---|---|
+| conta a ideia no chat | organiza em requisitos, conferindo o código | — |
+| responde perguntas | escreve a spec com os cenários | confere o formato |
+| **aprova** a spec e o plano | escreve testes (RED) e código (GREEN) | grava cada resultado de teste |
+| — | pede uma revisão independente | só aceita "pronto" com tudo provado |
+| faz o commit | arquiva e documenta o que mudou | o pre-commit recusa commit sem validação |
+
+Você só entra nas decisões; o resto anda sozinho.
+
+## Instalar no seu projeto
+
+**Precisa de:** Windows, [Git](https://git-scm.com/), PowerShell (já vem no
+Windows) e o Claude Code ou o Antigravity. O projeto precisa estar no Git
+(`git init`, se ainda não estiver).
+
+### 1. Coloque a pasta `SpecSimpleKit` dentro do seu projeto
+
+O mais fácil: abra o chat da IA no seu projeto e peça
+
+> **"Baixe a pasta SpecSimpleKit de https://github.com/Thander21/SDD-TDDkit para dentro deste projeto, sem o .git"**
+
+A IA vai rodar algo assim (você pode rodar também, no terminal da pasta do projeto):
+
+```powershell
+git clone --depth 1 --filter=blob:none --sparse https://github.com/Thander21/SDD-TDDkit.git ..\tmp-ssk
+git -C ..\tmp-ssk sparse-checkout set SpecSimpleKit
+Move-Item ..\tmp-ssk\SpecSimpleKit .\SpecSimpleKit
+Remove-Item -Recurse -Force ..\tmp-ssk
 ```
 
-O passo a passo completo, com o que dizer em cada etapa, está em
+Resultado: `MeuProjeto\SpecSimpleKit\` com o kit. (Também dá para baixar o ZIP
+do repositório no GitHub e copiar só essa pasta.)
+
+### 2. Peça à IA para instalar
+
+> **"Instale o SpecSimpleKit neste projeto"**
+
+A IA identifica a linguagem do projeto e roda:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File SpecSimpleKit\install.ps1 projeto -Destino . -Perfil node
+```
+
+(perfis: `node`, `python`, `dotnet`, `flutter`, `rust`, `unity`, `unreal`,
+`powershell`). **Não use o passo `maquina`** desta versão: ele mexe na
+configuração global da IDE.
+
+### 3. Peça o bootstrap
+
+> **"Rode a skill sdd-bootstrap"**
+
+A IA lê o seu projeto, faz até 5 perguntas (o que é, quais riscos importam,
+idioma…), preenche o `AGENTS.md` e calibra os testes. Revise o que mudou e faça
+o commit. Pronto: a partir daqui é só conversar.
+
+## Seu primeiro uso
+
+```text
+Você: quero que o carrinho permita remover um item
+IA:   registrei no backlog como item 01. Refino agora?
+Você: refine o item 01
+IA:   (lê o código, escreve requisitos, pergunta o que falta)
+Você: item 01 Pronto
+IA:   abri a change 01 com 3 cenários. Leia e aprove.
+Você: aprovo P1 da change 01
+IA:   (plano, tarefas e análise) Leia e aprove o plano.
+Você: aprovo P2 da change 01
+IA:   (teste falha → código → teste passa, cenário por cenário;
+       revisão independente; tudo provado) GOAL PASS. Faço o commit?
+```
+
+O guia completo, com cada etapa e o que dizer, está em
 [`docs/como-usar-fluxo.md`](docs/como-usar-fluxo.md).
 
-## Instalar num projeto (versão atual)
+## Os portões: só você aprova
 
-Pré-requisitos: Windows, Git e PowerShell 5.1 ou 7. O projeto precisa ser um
-repositório Git.
-
-1. Clone uma vez, fora dos seus projetos:
-
-   ```powershell
-   git clone https://github.com/Thander21/SDD-TDDkit.git C:\_Projetos\SDD-TDDkit
-   ```
-
-2. No chat da IA, aberto no seu projeto, peça para ela rodar o instalador com
-   parâmetros (a IA não deve usar o assistente interativo):
-
-   ```powershell
-   powershell -NoProfile -ExecutionPolicy Bypass -File C:\_Projetos\SDD-TDDkit\SpecSimpleKit\install.ps1 projeto -Destino . -Perfil node
-   ```
-
-   Perfis: `node`, `python`, `dotnet`, `flutter`, `rust`, `unity`, `unreal`,
-   `powershell`.
-
-3. Peça à IA: **"rode a skill sdd-bootstrap"**. Ela lê o projeto, faz até 5
-   perguntas, preenche a seção Projeto do `AGENTS.md`, calibra o perfil e
-   instala o pre-commit.
-
-4. Revise o diff e faça o commit.
-
-Atualizar: `git -C C:\_Projetos\SDD-TDDkit pull` e peça à IA
-`install.ps1 update -Destino .`. Conferir se algo do kit foi editado no
-projeto: `install.ps1 check -Destino .`.
-
-## Portões: só você aprova
-
-| Portão | Quando | Você escreve no chat |
+| Portão | O que você confere | O que você escreve |
 |---|---|---|
-| Pronto | o item do backlog está refinado | "item NN Pronto" |
-| P1 | a spec (cenários) está certa | "aprovo P1 da change NN" |
-| P2 | plano, tasks e análise estão certos | "aprovo P2 da change NN" |
-| Commit | a change fechou com `GOAL PASS` | você faz o commit (ou pede) |
+| **Pronto** | os requisitos do item estão certos | "item NN Pronto" |
+| **P1** | a spec (os cenários) está certa | "aprovo P1 da change NN" |
+| **P2** | o plano e as tarefas estão certos | "aprovo P2 da change NN" |
+| **Commit** | o trabalho fechou | você faz (ou pede) |
 
-A frase precisa citar a aprovação, o portão e a change ("change 02" ou
-"CHG-002"); "ok" ou "segue" não aprovam. A frase fica registrada na change.
-É confiança, não trava: a máquina não prova que a frase veio de você.
+A frase precisa dizer **aprovo**, o **portão** e a **change** (“change 01” ou
+“CHG-001”). “Ok” ou “pode seguir” **não** aprovam — de propósito, para nada
+passar sem você ler. A frase fica registrada na change.
 
-## O que vai para o projeto
+## Palavras que você vai ver
 
-| Arquivo | Para quê |
+| Termo | Significado |
 |---|---|
-| `AGENTS.md` (bloco `sdd-kit:begin/end`) | ponteiros do kit; o resto do arquivo é do projeto |
-| `.claude/CLAUDE.md` | entrada do Claude: importa `AGENTS.md` e o núcleo |
-| `.agents/rules/sdd-core.md`, `sdd-fluxo.md`, `sdd-revisao.md` | núcleo sempre ativo, fluxo completo e revisão |
-| `.agents/skills/` e `.claude/skills/` | `backlog-refinement`, `sdd-verify`, `sdd-bootstrap` e `learn` |
-| `.claude/agents/sdd-verifier.md` | verificador independente (sem Write/Edit) |
-| `Docs/Specs/` (`_templates/`, `capabilities/_index.md`) | moldes e registro de IDs `SPEC-<DOM>-NNN` |
-| `tools/sdd/sdd.ps1` | motor |
-| `.sdd/profile.json`, `.sdd/kit.lock.json` | perfil de gates (do projeto) e lock com hash (do kit) |
+| **backlog** | lista de ideias e pedidos (`Docs/Specs/backlog/`) |
+| **change** | uma mudança aprovada, com spec, plano e tarefas (`Docs/Specs/changes/NN-nome/`) |
+| **cenário** | um exemplo DADO/QUANDO/ENTÃO; cada um vira teste |
+| **RED / GREEN** | teste falhando antes do código / passando depois |
+| **spec viva** | o comportamento atual do sistema, atualizado a cada change concluída (`Docs/Specs/capabilities/`) |
+| **verificador** | uma segunda IA, que não escreveu o código, confere tudo antes de fechar |
+| **GOAL PASS** | o motor confirmou que a change está completa e provada |
 
-Arquivos do kit no projeto não se editam à mão: o `check` acusa pelo hash.
-Lição de método vai para o [`INBOX.md`](INBOX.md) do kit (skill `learn`).
+## Atualizar e remover
 
-## Motor (`tools/sdd/sdd.ps1`)
+- **Atualizar:** troque a pasta `SpecSimpleKit` pela versão nova (passo 1) e
+  peça à IA "atualize o SpecSimpleKit" (`install.ps1 update -Destino .`).
+- **Remover:** ainda manual nesta versão: apague os arquivos listados em
+  `.sdd/kit.lock.json`, o próprio lock, o bloco `sdd-kit:begin/end` do
+  `AGENTS.md` e a pasta `SpecSimpleKit`. Suas specs (`Docs/Specs/`) e o
+  `.sdd/profile.json` ficam. Um comando de remoção está em desenvolvimento.
 
-| Comando | Faz |
-|---|---|
-| `check` / `validate` | gates leves / completos do perfil + SpecLint |
-| `test <alvo> [--change NN]` | roda o teste e grava a evidência (`falha`, `passou`, `carga`, `zero`, `erro`) |
-| `approve <NN> P1\|P2 --frase "..."` | registra o portão com a sua frase |
-| `goal <NN>` | condição de parada: portões, tasks, RED e GREEN por cenário, validate, verificador, `impact` |
-| `verify-record <NN> APROVADO\|REPROVADO` | grava o veredito do verificador |
-| `calibrate`, `commit-gate`, `install-hook`, `status`, `ajuda` | calibração do perfil, pre-commit e estado |
+## Limitações desta versão
 
-## Perfis de stack
+- Só Windows (PowerShell). Testado com Node, Python e .NET; Flutter parcial;
+  Rust, Unity e Unreal são rascunhos.
+- A instalação ainda copia arquivos para a raiz do projeto (`.agents/`,
+  `.claude/`, `tools/sdd/`). A próxima versão lê tudo direto da pasta
+  `SpecSimpleKit/`.
+- A aprovação por frase é confiança, não trava: a máquina não prova que a
+  frase veio de você.
+- Cursor, Codex e Gemini CLI ainda não recebem atalhos próprios.
 
-| Perfil | Testado | Observação |
-|---|---|---|
-| node | sim (Node 24, `node:test` + JUnit) | |
-| python | sim (pytest + ruff em venv) | `{PY}` no `profile.local.json` |
-| dotnet | sim (.NET 9 + xUnit + TRX) | |
-| powershell | sim, no próprio repositório do kit | sem relatório estruturado (decide pelo exit code) |
-| flutter | parcial (`dart test`) | |
-| rust, unity, unreal | não | rascunhos; sondas obrigatórias |
+## Para quem quer ir fundo
 
-O `goal` recusa perfil não calibrado.
-
-## Documentos
-
-- [`docs/como-usar-fluxo.md`](docs/como-usar-fluxo.md): guia do fluxo pelo chat.
-- [`Metodologia SDD.ai`](Metodologia%20SDD.ai): decisão e protocolo (Markdown; extensão `.ai` por histórico).
-- [Diagnóstico comparativo](https://claude.ai/artifact/GCit5SpAwkbphRnXVsp6sB) com Spec Kit, OpenSpec, Kiro, BMAD e outros.
+- Referência técnica (arquivos no projeto, comandos do motor, perfis):
+  [`docs/como-usar-fluxo.md`](docs/como-usar-fluxo.md) e
+  [`Metodologia SDD.ai`](Metodologia%20SDD.ai) (texto Markdown).
+- Comparação com Spec Kit, OpenSpec, Kiro, BMAD e outros:
+  [diagnóstico comparativo](https://claude.ai/artifact/GCit5SpAwkbphRnXVsp6sB).
+- O kit é desenvolvido com ele mesmo no repositório
+  [SDD-TDDkit](https://github.com/Thander21/SDD-TDDkit). Histórico em
+  [`CHANGELOG.md`](CHANGELOG.md).

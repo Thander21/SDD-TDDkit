@@ -1,13 +1,39 @@
 # SDD-TDDkit
 
-Repositório de **desenvolvimento** do SpecSimpleKit. Aqui o próprio kit é
-construído com o método que ele ensina (dogfooding): a raiz é um projeto SDD
-com o SpecSimpleKit instalado, e cada melhoria passa por backlog, change,
-portões, TDD e verificação independente.
+**A oficina onde o SpecSimpleKit é construído.**
 
-**O produto está em [`SpecSimpleKit/`](SpecSimpleKit/README.md)** — leia o
-README de lá para instalar e usar num projeto:
-https://github.com/Thander21/SDD-TDDkit/tree/main/SpecSimpleKit
+> Quer **usar** o kit num projeto seu? Vá direto para o produto:
+> **[SpecSimpleKit](https://github.com/Thander21/SDD-TDDkit/tree/main/SpecSimpleKit)**
+> — o README de lá explica o que é SDD e TDD, como baixar só a pasta
+> `SpecSimpleKit` para o seu projeto e como usar pelo chat.
+
+## O que é
+
+O [SpecSimpleKit](SpecSimpleKit/README.md) é um mini-framework que guia a IA
+(Claude Code, Antigravity) a trabalhar com **SDD** (Spec-Driven Development:
+spec com cenários antes do código) e **TDD** (Test-Driven Development: teste
+que falha antes do código que o faz passar), com portões que só o usuário
+aprova.
+
+Este repositório é onde o kit é desenvolvido, **usando o próprio kit**
+(dogfooding): a raiz é um projeto SDD com o SpecSimpleKit instalado, e cada
+melhoria do kit passa pelo mesmo caminho que ele ensina — backlog, change com
+cenários, aprovação no chat, testes RED e GREEN, verificação independente e
+archive. Se o kit falha aqui, a falha vira item de backlog e é corrigida aqui.
+
+## O que ele faz
+
+- Guarda o **produto** em `SpecSimpleKit/` (é a única pasta que vai para os
+  projetos dos usuários).
+- Guarda o **desenvolvimento** do produto na raiz: as specs do próprio kit
+  (`docs/Specs/`), as regras de IA instaladas e a suíte de testes.
+- Prova cada mudança com a suíte do kit no Windows PowerShell 5.1 e no pwsh 7
+  antes de qualquer commit (pre-commit com `sdd validate`).
+
+## Para quem
+
+Para quem desenvolve o SpecSimpleKit. Para usar o kit, veja o
+[README do produto](SpecSimpleKit/README.md).
 
 ## Estrutura
 
