@@ -9,7 +9,7 @@
 | Capacidade | Domínio | Origem no código | Spec viva |
 |---|---|---|---|
 | instalador | `INST` | `SpecSimpleKit/install.ps1`, `SpecSimpleKit/instalar.cmd`, `SpecSimpleKit/project-templates/` | — |
-| motor | `MOTOR` | `SpecSimpleKit/kernel/tools/sdd/sdd.ps1` | — |
+| motor | `MOTOR` | `SpecSimpleKit/kernel/tools/sdd/sdd.ps1` | `capabilities/motor/spec.md` |
 | guard | `GUARD` | `SpecSimpleKit/machine/` | — |
 | perfis | `PERFIL` | `SpecSimpleKit/profiles/` | — |
 | fluxo | `FLUXO` | `SpecSimpleKit/kernel/.agents/`, `SpecSimpleKit/kernel/.claude/`, `SpecSimpleKit/kernel/AGENTS.kit.md`, `SpecSimpleKit/kernel/Docs/Specs/_templates/` | — |

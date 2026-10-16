@@ -1,13 +1,13 @@
 ---
 id: CHG-002
 title: Aprovação dos portões por frase no chat
-status: Draft
+status: Done
 capabilities: [motor]
 risk: [portao-humano, contrato-do-motor]
 fonte_normativa:
-base_ref:
+base_ref: e24ea4eb219191231d3667de2be677ffb8dfdb61
 impact:
-  modified_files: [SpecSimpleKit/kernel/tools/sdd/sdd.ps1, SpecSimpleKit/kernel/.agents/rules/sdd-core.md, SpecSimpleKit/tests/run_all.ps1, SpecSimpleKit/tests/test_guard.ps1, SpecSimpleKit/CHANGELOG.md, SpecSimpleKit/docs/como-usar-fluxo.md, tools/sdd/sdd.ps1, .agents/rules/sdd-core.md, .sdd/kit.lock.json, AGENTS.md]
+  modified_files: [README.md, SpecSimpleKit/Metodologia SDD.ai, SpecSimpleKit/kernel/tools/sdd/sdd.ps1, SpecSimpleKit/kernel/.agents/rules/sdd-core.md, SpecSimpleKit/kernel/.agents/rules/sdd-fluxo.md, SpecSimpleKit/kernel/.agents/skills/backlog-refinement/SKILL.md, SpecSimpleKit/project-templates/AGENTS.md, SpecSimpleKit/kernel/Docs/Specs/_templates/change.md, docs/Specs/_templates/change.md, SpecSimpleKit/tests/run_all.ps1, SpecSimpleKit/tests/test_guard.ps1, SpecSimpleKit/CHANGELOG.md, SpecSimpleKit/docs/como-usar-fluxo.md, tools/sdd/sdd.ps1, .agents/rules/sdd-core.md, .agents/rules/sdd-fluxo.md, .agents/skills/backlog-refinement/SKILL.md, .sdd/kit.lock.json, AGENTS.md]
   new_files: [SpecSimpleKit/tests/test_motor_aprovacao.ps1]
 ---
 
@@ -40,6 +40,11 @@ frase no chat, para ter tempo de ler e editar o documento antes (origem, R2).
 | D2 | A frase só vale se citar a aprovação, o portão e o número da change: contém `aprov` (sem diferenciar maiúsculas), `P1` ou `P2` e o número (`01` ou `1`). Ex.: "aprovo P1 da change 01". | origem RF9 ("aprovo P1 da change 01") | 14/10/2026 |
 | D3 | A linha gravada é a de hoje com um campo a mais: depois de `sdd approve;` entra `via chat: "<frase>";`, antes do hash. O trecho que o motor procura (`sdd.ps1:398`) não muda, então changes antigas e projetos instalados continuam válidos. | risco `contrato-do-motor` | 14/10/2026 |
 | D4 | O `edit_guard` continua negando a escrita à mão de `status`, `base_ref` e linha de aprovação: o único caminho é o `sdd approve`. O guard de comando continua pedindo confirmação ao `sdd approve` (permissão da ferramenta). | risco `portao-humano`; `machine/edit_guard.ps1:122-133`, `machine/guard.ps1:217` | 14/10/2026 |
+| D6 | Exceção E1 (aceita em 14/10/2026, opção "Exceção única") cumprida: o usuário deu a frase "aprovo P1 e P2 da change 02" antes da implementação; P1 e P2 foram registrados pelo motor novo com essa frase assim que o `--frase` ficou GREEN. | E1; linhas em `## Aprovações` | 14/10/2026 |
+| D10 | O número da change só vale colado a "change" ou "CHG" ("change 02", "change 2", "CHG-002"); número solto (data, "os 2 portões") é ignorado, e frase que cita assim outra change é recusada. Ajusta a letra da D2 (achado A1-R da 2ª verificação). | usuário, 14/10/2026 (opção "Junto de change") | 14/10/2026 |
+| D7 | Aceito o `impact` ampliado depois do P1/P2 com 7 arquivos de documentação da mesma regra (sdd-fluxo, skill de refinamento, molde do `AGENTS.md`, moldes da change e cópias da raiz) e, pelo achado A2, `README.md` e `SpecSimpleKit/Metodologia SDD.ai`. Mensagens dos guards vão para a CHG-005; o diagnóstico HTML, para a release. | usuário, 14/10/2026 (B3 "Aceito"; A2 "Dividir") | 14/10/2026 |
+| D8 | Frase negativa ("não aprovo P1 da change 01") passa pela letra da D2 e fica assim: quem escreve a frase é o usuário. | usuário, 14/10/2026 (B1 "Deixar como está") | 14/10/2026 |
+| D9 | Orçamento "40 KB" do Markdown do kernel = 40.960 bytes; a unidade passa a constar no README. | usuário, 14/10/2026 (B4) | 14/10/2026 |
 | D5 | É honra, não imposto: a máquina não prova que a frase veio do usuário. Aceito pelo usuário (origem RN4). O núcleo (`sdd-core.md`) passa a dizer isso na tabela "imposto e honra" e na regra dos portões. | origem R2, RN4 | 14/10/2026 |
 
 ## Contratos
@@ -88,7 +93,11 @@ traz a frase do usuário, e gravar a frase literal no registro.
 ##### Scenario: C3 — Frase que não cita portão ou change
 
 - **DADO** a mesma change
-- **QUANDO** a IA roda `sdd approve 01 P1 --frase "ok pode seguir"`
+- **QUANDO** a IA roda `sdd approve 01 P1 --frase "ok pode seguir"`, ou
+  com uma frase que cita outra change ("aprovo P1 da change 03") ou nenhuma
+  ("aprovo P1"), ou com número solto ("aprovo P1 da change 03 em 01/10");
+  o número só vale junto de "change" ou "CHG" (D10; achados A1 e A1-R
+  dos verificadores, 14/10/2026)
 - **ENTÃO** sai `RECUSADO`, exit 1, e o arquivo não muda
 
 ##### Scenario: C4 — P2 por frase grava base_ref
@@ -145,36 +154,35 @@ há código novo que o faça passar). Movidos dos deltas antes do P1. -->
 
 ## Tasks
 
-- [ ] REGRESSÃO (R-1, R-2, R-3): testes em `test_motor_aprovacao.ps1` (R-1) e `test_guard.ps1` (R-2, R-3) passando antes de qualquer mudança no motor
-- [ ] RED (C1): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: approve com --frase pela IA devolve uso/RECUSADO e o status continua Draft
-- [ ] RED (C2): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: mensagem de recusa sem a sugestão de --frase
-- [ ] RED (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: frase inválida devolve erro de uso (exit 2) em vez de RECUSADO (exit 1)
-- [ ] RED (C4): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: P2 com --frase não grava base_ref nem a frase
-- [ ] GREEN (C1): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
-- [ ] GREEN (C2): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
-- [ ] GREEN (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
-- [ ] GREEN (C4): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
-- [ ] REFACTOR: extrair a validação da frase numa função `Test-SddFraseAprovacao` (alvo re-rodado)
-- [ ] DOC: `sdd-core.md` (regra dos portões e tabela imposto/honra), `AGENTS.md` (linha `portao-humano` e comando do portão), `como-usar-fluxo.md` (tira o "hoje"), `CHANGELOG.md`
-- [ ] SYNC: `install.ps1 update -Destino . -Forcar` e `install.ps1 check -Destino .` sem desvio
-- [ ] E1: registrar P1 e P2 desta change com o motor novo, citando as frases do usuário; esvaziar `## Exceções`
+- [x] REGRESSÃO (R-1, R-2, R-3): testes em `test_motor_aprovacao.ps1` (R-1) e `test_guard.ps1` (R-2, R-3) passando antes de qualquer mudança no motor
+- [x] RED (C1): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: approve com --frase pela IA devolve uso/RECUSADO e o status continua Draft
+- [x] RED (C2): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: mensagem de recusa sem a sugestão de --frase
+- [x] RED (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: frase inválida devolve erro de uso (exit 2) em vez de RECUSADO (exit 1)
+- [x] RED (C4): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: P2 com --frase não grava base_ref nem a frase
+- [x] GREEN (C1): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
+- [x] GREEN (C2): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
+- [x] GREEN (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
+- [x] GREEN (C4): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
+- [x] RED (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: "aprovo P1 da change 03" e "aprovo P1" aprovam a change 01 (achado A1 do verificador)
+- [x] GREEN (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou
+- [x] RED (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: "aprovo P1 da change 03 em 01/10" aprova a change 01 e "aprovo P1 e P2 da change 05, os 2 portoes" aprova o P2 da 02 (achado A1-R)
+- [x] GREEN (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou (D10)
+- [x] RED (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> Falha esperada: "aprovo P1 da change 99999999999" sai com ERRO exit 2 em vez de RECUSADO exit 1 (achado A3); "change 01 e change 03" ja recusa, coberto por prova de mutacao: com `return ($citadas -contains $num)` o teste falha, 25/28 (achado A4)
+- [x] GREEN (C3): SpecSimpleKit/tests/test_motor_aprovacao.ps1 -> passou (A3, A4)
+- [x] DOC (A2): `README.md` (comando `approve` e unidade do orçamento), `Metodologia SDD.ai` (portões e tabela), `AGENTS.md` (referência de linha)
+- [x] REFACTOR: extrair a validação da frase numa função `Test-SddFraseAprovacao` (alvo re-rodado)
+- [x] DOC: `sdd-core.md` (regra dos portões e tabela imposto/honra), `sdd-fluxo.md` e `backlog-refinement` (mesma regra, acrescentados ao `impact` em 14/10/2026 para não ficarem contraditórios), molde e `AGENTS.md` (linha `portao-humano` e comando do portão), `como-usar-fluxo.md` (tira o "hoje"), `CHANGELOG.md`
+- [x] SYNC: `install.ps1 update -Destino . -SemArvoreLimpa` e `install.ps1 check -Destino .` sem desvio; a primeira sem `-Forcar` (antes do P2), as seguintes com `-Forcar` (change já em implementação; exceção da raiz no `AGENTS.md`; achado B2 do verificador)
+- [x] E1: registrar P1 e P2 desta change com o motor novo, citando as frases do usuário; esvaziar `## Exceções`
 
 ### Pós-GOAL
 
-- [ ] Archive (a pedido do usuário): deltas na spec viva, `git mv` para `concluidas/`, `status: Done`
+- [x] Archive (automático depois do GOAL PASS, decisão do usuário de 16/10/2026): deltas na spec viva, `git mv` para `concluidas/`, `status: Done`
 
 ## Exceções
 
-- **E1 (aceita pelo usuário em 14/10/2026, opção "Exceção única"; prazo:
-  até o archive desta change):** esta é a change que cria a aprovação pelo
-  chat, então o motor ainda não aceita a frase quando o P1 dela é pedido.
-  Procedimento: o usuário escreve no chat a frase do P1 (e depois a do P2);
-  a implementação segue com TDD e, assim que o `--frase` estiver GREEN, a IA
-  registra P1 e P2 com o próprio motor novo, citando as frases dadas antes.
-  A exceção sai daqui quando as duas linhas estiverem gravadas.
-  Frase dada pelo usuário em 14/10/2026 (opção escolhida no chat):
-  "aprovo P1 e P2 da change 02".
-
 ## Aprovações
 
-<!-- Gravado só pelo 'sdd approve NN P1|P2' no terminal do usuário. -->
+<!-- Gravado só pelo 'sdd approve NN P1|P2' (frase do usuário ou terminal dele). -->
+- P1: aprovado por Thander em 2026-10-14 16:48 (sdd approve; via chat: "aprovo P1 e P2 da change 02"; change.md antes: 4fadd7895f32)
+- P2: aprovado por Thander em 2026-10-14 16:48 (sdd approve; via chat: "aprovo P1 e P2 da change 02"; change.md antes: fd08e3caa527)

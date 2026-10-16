@@ -50,7 +50,8 @@ Pré-condição: `Prontidão: Pronto` e nenhuma pergunta sem resposta.
   features fica na pasta da primeira; as seguintes citam esse caminho.
 
 **Parada:** a IA nunca muda a change para `Approved`. Diga ao usuário que,
-com as perguntas respondidas, ele aprova com `sdd approve NN P1`.
+com as perguntas respondidas, ele aprova escrevendo no chat "aprovo P1 da
+change NN"; só então rode `sdd approve NN P1 --frase "<a frase dele>"`.
 
 ## Verificação antes de encerrar
 

@@ -25,7 +25,7 @@
 | Antes de commit e no fecho da change | `powershell -File tools/sdd/sdd.ps1 validate` |
 | RED e GREEN de uma task | `powershell -File tools/sdd/sdd.ps1 test <alvo>` |
 | Parada da change | `powershell -File tools/sdd/sdd.ps1 goal <NN>` |
-| Portão (só o usuário, no terminal dele) | `powershell -File tools/sdd/sdd.ps1 approve <NN> P1\|P2` |
+| Portão (frase do usuário no chat) | `powershell -File tools/sdd/sdd.ps1 approve <NN> P1\|P2 --frase "aprovo P1 da change NN"` |
 
 ### Convenções
 

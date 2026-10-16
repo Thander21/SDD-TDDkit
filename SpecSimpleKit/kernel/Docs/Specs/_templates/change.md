@@ -109,4 +109,4 @@ por <quem>' (fica listado como não verificado por máquina). -->
 
 ## Aprovações
 
-<!-- Gravado só pelo 'sdd approve NN P1|P2' no terminal do usuário. -->
+<!-- Gravado só pelo 'sdd approve NN P1|P2' (frase do usuário ou terminal dele). -->

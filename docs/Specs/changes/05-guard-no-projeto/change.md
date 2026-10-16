@@ -42,6 +42,7 @@ que o kit configura só o projeto onde está (origem, R1 e R5).
 | D4 | Entradas do kit reconhecidas assim: hooks do Claude cujo `args` termina em `tools/sdd/guard.ps1` ou `tools/sdd/edit_guard.ps1`; permissões pela lista fixa do kit (as mesmas 42 `deny` e 4 `ask` de antes); Antigravity pelas chaves `sdd-kit-guard` e `sdd-kit-edit-guard`. Nada mais do arquivo é tocado. | origem, RN2; identificadores `sdd-kit` mantidos (CHANGELOG) | 14/10/2026 |
 | D5 | Conteúdo do usuário nos settings é preservado; a formatação do JSON pode mudar (o PowerShell reescreve o arquivo). O `status` e a saída do `ativar` dizem quais arquivos mudaram. | risco `arquivo-do-usuario` | 14/10/2026 |
 | D6 | Hooks nos settings do projeto rodam sem a tela de confiança da pasta, e `deny`/`ask` valem na hora: quem clona o projeto recebe o guard ativo. Aceito, porque é o guard do próprio projeto. | code.claude.com/docs/en/permissions ("What runs before you trust a folder"), 14/10/2026 | 14/10/2026 |
+| D8 | As mensagens dos guards que mandam aprovar "no terminal" (`edit_guard.ps1:124`, `guard.ps1:217`) passam a orientar a frase no chat (`sdd approve NN P1\|P2 --frase`). | achado A2 da verificação da CHG-002; decisão do usuário "Dividir", 14/10/2026 | 14/10/2026 |
 | D7 | Os guards saem de `machine/` e entram no kernel (`tools/sdd/`), viram arquivos gerenciados com hash no lock; o `edit_guard` já pede confirmação para editar `tools/sdd/`. A pasta `machine/`, a ação `maquina` e os parâmetros `-Aplicar` e `-Casa` saem do instalador. | origem, RN1 | 14/10/2026 |
 
 ## Contratos

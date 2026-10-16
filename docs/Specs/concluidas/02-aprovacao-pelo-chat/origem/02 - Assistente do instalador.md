@@ -146,6 +146,6 @@ reescreve arquivos do usuário sem mostrar o que muda e sem desfazer.
 
 - 14/10/2026: Pronto pelo usuário (escolheu "Exceção única": abrir a CHG-002
   com a U4 à frente da CHG-001).
-- U4 → `changes/02-aprovacao-pelo-chat/change.md` (CHG-002, Draft), primeira
+- U4 → `concluidas/02-aprovacao-pelo-chat/change.md` (arquivada em 16/10/2026) (CHG-002, Draft), primeira
   a ser implementada.
 - U1, U2, U3 e U5: changes seguintes, que citam este caminho.

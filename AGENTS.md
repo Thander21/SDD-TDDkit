@@ -66,7 +66,7 @@ stack (`README.md`). Este repositório usa o próprio kit (dogfooding): a raiz
 | Antes de commit e no fecho da change (+ suíte completa, minutos) | `powershell -File tools/sdd/sdd.ps1 validate` |
 | RED e GREEN de uma task | `powershell -File tools/sdd/sdd.ps1 test SpecSimpleKit/tests/<arquivo>.ps1` |
 | Parada da change | `powershell -File tools/sdd/sdd.ps1 goal <NN>` |
-| Portão (só o usuário, no terminal dele) | `powershell -File tools/sdd/sdd.ps1 approve <NN> P1\|P2` |
+| Portão (frase do usuário no chat) | `powershell -File tools/sdd/sdd.ps1 approve <NN> P1\|P2 --frase "aprovo P1 da change NN"` |
 | Suíte do kit direto | `powershell -File SpecSimpleKit/tests/run_all.ps1 [-Py <python do venv>]` |
 | Sincronizar a raiz com o kernel | `powershell -File SpecSimpleKit/install.ps1 update -Destino .` |
 
@@ -76,7 +76,7 @@ stack (`README.md`). Este repositório usa o próprio kit (dogfooding): a raiz
   scripts (ASCII); documentação em pt-BR com acento.
 - Funções `Verbo-Substantivo` com prefixo no motor (`Invoke-SddGoal`,
   `Test-SddTerminalHumano`: `SpecSimpleKit/kernel/tools/sdd/sdd.ps1:801`,
-  `:964`); `$ErrorActionPreference = 'Stop'` no topo
+  `:976`); `$ErrorActionPreference = 'Stop'` no topo
   (`SpecSimpleKit/install.ps1:26`, `sdd.ps1:11`); mensagens de erro
   `ERRO: ...` com exit 2 no instalador.
 - Testes: um script por área em `SpecSimpleKit/tests/test_*.ps1`, com
@@ -92,7 +92,7 @@ stack (`README.md`). Este repositório usa o próprio kit (dogfooding): a raiz
 | Tag | Promove a feature? | Invariantes | Cenário obrigatório | Exige fonte normativa? |
 |---|---|---|---|---|
 | `config-global` | sim | nada fora do projeto do usuário (`~/.claude`, `~/.gemini`, PATH, registro) muda sem comando explícito do humano, plano mostrado antes e backup; nunca antes de o projeto ser confirmado (incidente 12/10/2026: assistente aplicou o guard antes de perguntar o projeto) | gravação global recusada sem confirmação e sem humano no terminal; backup criado; desfazer restaura | não |
-| `portao-humano` | sim | a IA não aprova P1/P2, não grava `status`/`base_ref`/Aprovações nem desliga guard (`sdd.ps1:964-983`, `machine/guard.ps1:217`) | o comando recusa quando chamado por agente (`CLAUDECODE`, stdin redirecionado) | não |
+| `portao-humano` | sim | a IA não aprova P1/P2 sem a frase do usuário que cita aprovação, portão e change; não grava `status`/`base_ref`/Aprovações à mão nem desliga guard (`kernel/tools/sdd/sdd.ps1`, `Invoke-SddApprove` e `Test-SddFraseAprovacao`; `machine/guard.ps1:217`) | agente sem `--frase` ou com frase inválida → `RECUSADO` e nada gravado | não |
 | `arquivo-do-usuario` | sim | instalador e update nunca sobrescrevem nem apagam arquivo do projeto fora dos gerenciados; conflito aborta sem gravação parcial (`install.ps1:285-295`); texto editado vira `.kitnew` | arquivo do usuário com conteúdo diferente → nada gravado e conflito listado | não |
 | `contrato-do-motor` | sim | formato de `change.md`, `evidence.jsonl`, `kit.lock.json`, marcadores `sdd-kit:begin/end` e última linha do `goal` só muda com migração para projetos já instalados | projeto instalado na versão anterior continua passando `check` e `goal` depois do update | não |
 | `start-chat` | sim | o início pode ser só pelo chat, sem rodar instalador: a IA reconhece se a pasta já tem o kit, faz as perguntas iniciais quando não reconhece projeto, ou lê o projeto atual e aplica a metodologia (decisão do usuário, 12/10/2026) | pasta sem kit → a IA pergunta e instala/inicia; pasta com kit → a IA lê o estado e retoma | não |

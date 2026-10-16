@@ -52,10 +52,10 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 | # | Etapa | Saída | Status |
 |---|---|---|---|
 | 1 | Especificação | Por quê + deltas com cenários `SPEC-<DOM>-NNN/Cn` | `Draft` |
-| 2 | Clarificação | `## Perguntas em aberto` vazia; respostas viram `D<n>` | **P1**: usuário roda `sdd approve NN P1` → `Approved` |
+| 2 | Clarificação | `## Perguntas em aberto` vazia; respostas viram `D<n>` | **P1**: frase do usuário → `sdd approve NN P1 --frase` → `Approved` |
 | 3 | Plano | Decisões, Contratos, Invariantes por risco, `impact` | `Approved` |
 | 4 | Tarefas | `## Tasks` RED → GREEN → REFACTOR por cenário | `Approved` |
-| 5 | Análise (só feature) | `## Análise pré-implementação` | **P2**: `sdd approve NN P2` → `In-Implementation` + `base_ref` |
+| 5 | Análise (só feature) | `## Análise pré-implementação` | **P2**: idem com `P2` → `In-Implementation` + `base_ref` |
 | 6 | Implementação | código + testes + evidência; verificador; `GOAL PASS` | `In-Implementation` |
 | ↺ | Archive (a pedido do usuário) | deltas na spec viva; pasta em `concluidas/` | `Done` |
 

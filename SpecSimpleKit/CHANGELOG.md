@@ -20,6 +20,13 @@
 - `docs/como-usar-fluxo.md`: guia de uso pelo chat (fluxo do pedido ao
   código pronto, pastas, portões e o que dizer em cada etapa).
 
+- `sdd approve <NN> P1|P2 --frase "<frase do usuário>"` (CHG-002): a IA
+  aprova o portão com a frase do usuário no chat, que precisa citar
+  aprovação, portão e a change ("change 02" ou "CHG-002"; número solto não
+  vale); a frase fica na linha de aprovação
+  (`via chat: "..."`). Sem `--frase`, a IA continua recusada; o formato
+  antigo da linha continua válido. É honra, não imposto (núcleo atualizado).
+
 ## 0.1.0 — 12/10/2026
 
 Primeira versão, extraída da metodologia do ERP PDV D+ (CHG-049, CHG-050,

@@ -958,7 +958,23 @@ function Invoke-SddGoal([string[]]$Argv) {
 }
 
 # ---------------------------------------------------------------------
-# approve <NN> P1|P2: so num terminal humano
+# Frase do usuario vale como aprovacao se citar a aprovacao, o portao e o
+# numero da change (CHG-002, D2). Ex.: "aprovo P1 da change 01".
+function Test-SddFraseAprovacao([string]$Frase, [string]$Portao, [string]$NN) {
+  $num = [int]($NN -replace '\D', '')
+  if ($Frase -notmatch '(?i)aprov') { return $false }
+  if ($Frase -notmatch ('(?i)\b' + $Portao + '\b')) { return $false }
+  # O numero so vale colado a "change" ou "CHG" (D10): numero solto, como uma
+  # data ou o "1" de "P1", nao cita a change; citar outra change recusa.
+  # Compara como texto sem zeros a esquerda: numero gigante nao vira excecao (achado A3).
+  $alvo = ([string]$num).TrimStart('0')
+  $citadas = @([regex]::Matches($Frase, '(?i)\b(?:change|chg)[\s\-_:#]*([0-9]+)\b') | ForEach-Object { $_.Groups[1].Value.TrimStart('0') })
+  if ($citadas.Count -eq 0) { return $false }
+  return (@($citadas | Where-Object { $_ -ne $alvo }).Count -eq 0)
+}
+
+# approve <NN> P1|P2 [--frase "<texto>"]: no terminal humano (codigo digitado)
+# ou pela IA com a frase do usuario no chat (registrada na linha).
 # ---------------------------------------------------------------------
 
 function Test-SddTerminalHumano {
@@ -981,12 +997,27 @@ function Set-SddCampoFrontmatter([string]$Texto, [string]$Campo, [string]$Valor)
 }
 
 function Invoke-SddApprove([string[]]$Argv) {
-  if ($Argv.Count -ne 2 -or @('P1', 'P2') -notcontains $Argv[1].ToUpperInvariant()) { throw 'uso: sdd approve <NN> P1|P2 (rode no SEU terminal)' }
-  if (-not (Test-SddTerminalHumano)) {
-    Write-SddLinha 'RECUSADO: o portao so pode ser aprovado por voce, num terminal interativo (nao pela IA nem por pipe).'
+  $frase = $null
+  $pos = @()
+  for ($i = 0; $i -lt $Argv.Count; $i++) {
+    if ($Argv[$i] -eq '--frase') {
+      if ($i + 1 -ge $Argv.Count) { throw 'uso: --frase "<frase do usuario>"' }
+      $frase = $Argv[$i + 1]; $i++
+    } else { $pos += $Argv[$i] }
+  }
+  if ($pos.Count -ne 2 -or @('P1', 'P2') -notcontains $pos[1].ToUpperInvariant()) { throw 'uso: sdd approve <NN> P1|P2 [--frase "<frase do usuario>"]' }
+  $portao = $pos[1].ToUpperInvariant()
+  if ($null -ne $frase) {
+    $frase = (($frase -replace '\s+', ' ') -replace '"', "'").Trim()
+    if (-not (Test-SddFraseAprovacao $frase $portao $pos[0])) {
+      Write-SddLinha ("RECUSADO: frase sem aprovacao, portao ou numero da change (ex.: 'aprovo {0} da change {1}')." -f $portao, $pos[0])
+      return 1
+    }
+  } elseif (-not (Test-SddTerminalHumano)) {
+    Write-SddLinha ("RECUSADO: o portao so pode ser aprovado por voce: no seu terminal, ou pela IA com a sua frase (--frase `"aprovo {0} da change {1}`")." -f $portao, $pos[0])
     return 1
   }
-  $portao = $Argv[1].ToUpperInvariant()
+  $Argv = $pos
   $c = Find-SddChange $Argv[0]
   if ($c.Erro) { throw "frontmatter invalido: $($c.Erro)" }
   $st = Get-SddStatus $c
@@ -1013,15 +1044,19 @@ function Invoke-SddApprove([string[]]$Argv) {
   Write-SddLinha ("  risk: {0}" -f ((@(Get-SddProp $c.Fm 'risk' @())) -join ', '))
   Write-SddLinha ("  portao {0}: {1} -> {2}" -f $portao, $st, $novo)
   $token = -join ((1..4) | ForEach-Object { 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[(Get-Random -Maximum 32)] })
-  Write-SddLinha "  Para aprovar, digite o codigo $token e Enter (qualquer outra coisa cancela):"
-  $resp = [Console]::ReadLine()
-  if ($resp -ne $token) { Write-SddLinha 'Cancelado.'; return 1 }
+  if ($null -eq $frase) {
+    Write-SddLinha "  Para aprovar, digite o codigo $token e Enter (qualquer outra coisa cancela):"
+    $resp = [Console]::ReadLine()
+    if ($resp -ne $token) { Write-SddLinha 'Cancelado.'; return 1 }
+  }
   $nome = ((Invoke-SddGit -GitArgs @('config', 'user.name') -PermitirFalha).Out | Select-Object -Last 1)
   if (-not $nome) { $nome = $env:USERNAME }
   $hashAntes = (Get-SddSha256Texto $c.Texto).Substring(0, 12)
   $texto = Set-SddCampoFrontmatter $c.Texto 'status' $novo
   if ($portao -eq 'P2') { $texto = Set-SddCampoFrontmatter $texto 'base_ref' (Get-SddHead) }
-  $linha = ("- {0}: aprovado por {1} em {2} (sdd approve; change.md antes: {3})" -f $rotulo, $nome, (Get-Date).ToString('yyyy-MM-dd HH:mm'), $hashAntes)
+  $via = ''
+  if ($null -ne $frase) { $via = ('via chat: "' + $frase + '"; ') }
+  $linha = ("- {0}: aprovado por {1} em {2} (sdd approve; {3}change.md antes: {4})" -f $rotulo, $nome, (Get-Date).ToString('yyyy-MM-dd HH:mm'), $via, $hashAntes)
   $t = $texto -replace "`r`n", "`n"
   $m = [regex]::Match($t, '(?m)^##\s+Aprova\S*\s*$')
   if ($m.Success) {
@@ -1220,7 +1255,7 @@ function Show-SddAjuda {
     '  test <alvo> [--change NN] [--sonda carga|red|zero]   roda um alvo e grava a evidencia',
     '  spec-lint              confere frontmatter, portoes e IDs das changes',
     '  goal <NN> [--pre-verify]   condicao de parada da change (GOAL PASS|FAIL)',
-    '  approve <NN> P1|P2     aprova portao (SO no seu terminal; a IA nao consegue)',
+    '  approve <NN> P1|P2 [--frase "..."]  aprova portao: no seu terminal, ou pela IA com a sua frase do chat',
     '  verify-record <NN> APROVADO|REPROVADO [--arquivo f]   grava o relatorio do verificador',
     '  commit-gate            usado pelo pre-commit: exige check/validate verde da mesma arvore',
     '  install-hook           instala o pre-commit (encadeia o que ja existir)',

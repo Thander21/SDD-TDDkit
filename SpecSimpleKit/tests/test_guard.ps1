@@ -83,6 +83,9 @@ Test-Edicao 'Edit Draft->Approved nega' @{ file_path = $chg; old_string = 'statu
 Test-Edicao 'Edit so troca a palavra Draft->In-Implementation nega' @{ file_path = $chg; old_string = 'Draft'; new_string = 'In-Implementation' } 'deny'
 Test-Edicao 'Write com status Approved nega' @{ file_path = $chg; content = "---`nid: CHG-001`ntitle: X`nstatus: Approved`n---`n" } 'deny' 'Write'
 Test-Edicao 'forjar linha de aprovacao nega' @{ file_path = $chg; old_string = '## Aprovacoes'; new_string = "## Aprovacoes`n- P1: aprovado por x (sdd approve; y)" } 'deny'
+# CHG-002: aprovacao por frase passa pelo guard de comando (ask) e a linha nova, com "via chat", continua so do motor.
+Test-Comando 'powershell -File tools/sdd/sdd.ps1 approve 01 P1 --frase "aprovo P1 da change 01"' 'ask'
+Test-Edicao 'R-3 forjar linha de aprovacao com via chat nega' @{ file_path = $chg; old_string = '## Aprovacoes'; new_string = "## Aprovacoes`n- P1: aprovado por x em 2026-10-14 10:00 (sdd approve; via chat: `"aprovo P1 da change 01`"; change.md antes: y)" } 'deny'
 Test-Edicao 'gravar base_ref nega' @{ file_path = $chg; old_string = 'status: Draft'; new_string = "status: Draft`nbase_ref: abc123" } 'deny'
 Test-Edicao 'status Done pede confirmacao' @{ file_path = $chg; old_string = 'status: Draft'; new_string = 'status: Done' } 'ask'
 Test-Edicao 'edicao comum no change.md passa' @{ file_path = $chg; old_string = 'title: X'; new_string = 'title: Y' } 'allow'

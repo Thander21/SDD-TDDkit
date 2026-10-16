@@ -2,11 +2,8 @@
 
 > Guia para quem usa o kit pelo chat da IA (Claude Code, Antigravity). A
 > regra que a IA segue está em `kernel/.agents/rules/sdd-fluxo.md`; este
-> documento explica o mesmo fluxo para pessoas. Versão de 14/10/2026.
->
-> **Estado:** a aprovação dos portões por frase no chat é a CHG-002, ainda
-> em andamento. Até ela fechar, o portão é aprovado no terminal (marcado
-> como "hoje" abaixo).
+> documento explica o mesmo fluxo para pessoas. Versão de 14/10/2026
+> (aprovação pelo chat desde a CHG-002).
 
 ## 1. Do pedido ao código pronto
 
@@ -37,9 +34,8 @@ e os guards conferem e gravam.
                          └────────────┬────────────┘
                                       │
  ╔════════════ P1 ═════════════╗      │
- ║ hoje: terminal + código     ║ ─────┼──────────────────────────► sdd approve NN P1
- ║ CHG-002: "aprovo P1 da      ║      │                              status: Approved
- ║  change NN" no chat         ║      │
+ ║ você no chat: "aprovo P1    ║ ─────┼──────────────────────────► sdd approve NN P1 --frase
+ ║  da change NN"              ║      │                              status: Approved
  ╚═════════════════════════════╝      │
                          ┌────────────┴────────────┐
                          │ Etapa 3  Plano          │  Decisões, Contratos, Invariantes, impact
@@ -47,7 +43,7 @@ e os guards conferem e gravam.
                          │ Etapa 5  Análise        │  cenário sem task? arquivo fora do impact?
                          └────────────┬────────────┘
  ╔════════════ P2 ═════════════╗      │
- ║ mesma regra do P1           ║ ─────┼──────────────────────────► sdd approve NN P2
+ ║ "aprovo P2 da change NN"    ║ ─────┼──────────────────────────► sdd approve NN P2 --frase
  ╚═════════════════════════════╝      │                              status: In-Implementation
                                       │                              base_ref = HEAD
                          ┌────────────┴────────────┐
@@ -87,7 +83,7 @@ e os guards conferem e gravam.
 Um item que gera várias changes fica na `origem/` da primeira; as seguintes
 citam esse caminho.
 
-## 3. O portão: hoje e depois da CHG-002
+## 3. O portão pelo chat (antes e depois da CHG-002)
 
 ```text
  HOJE                                         DEPOIS DA CHG-002
@@ -102,7 +98,7 @@ citam esse caminho.
                                                 │
                                                 ▼
                                               motor confere a frase:
-                                                tem "aprov"? tem "P1"? tem "01"?
+                                                tem "aprov"? tem "P1"? tem "change 01"?
                                                 ├─ não → RECUSADO, nada gravado
                                                 └─ sim → status Approved
                                                          linha com via chat: "<sua frase>"

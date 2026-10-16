@@ -123,7 +123,7 @@ Conferir deriva: `install.ps1 check -Destino <repo>`. Atualizar:
 | `check` / `validate`                     | gates leves / completos do perfil + SpecLint; grava o resultado com o hash da árvore                                                                                                                                                    |
 | `test <alvo> [--change NN]`              | roda o alvo e grava a evidência (`falha`, `passou`, `carga`, `zero`, `erro`, `inconsistente`)                                                                                                                                           |
 | `goal <NN>`                              | condição de parada: perfil calibrado, portões P1/P2, fonte normativa, tasks, RED e GREEN por cenário, validate e verificador da árvore atual, impact do working tree, exceções                                                          |
-| `approve <NN> P1\|P2`                    | portão humano: recusa stdin redirecionado e sessão do Claude Code (no Antigravity, depende de o terminal do agente não ser interativo; não confirmado). O P2 numa change já em implementação só re-ancora o `base_ref` depois de rebase |
+| `approve <NN> P1\|P2 [--frase "..."]`    | portão humano: a IA aprova só com a frase do usuário que cita aprovação, portão e change (`--frase`, gravada na linha); sem frase, só no terminal dele. O P2 numa change já em implementação só re-ancora o `base_ref` depois de rebase |
 | `verify-record <NN> APROVADO\|REPROVADO` | grava o `verify.md` carimbado                                                                                                                                                                                                           |
 | `commit-gate` / `install-hook`           | pre-commit que só lê o último check/validate da mesma árvore                                                                                                                                                                            |
 | `calibrate`                              | confere as 3 sondas e marca o perfil como calibrado                                                                                                                                                                                     |
@@ -154,7 +154,7 @@ PowerShell 5.1 e no pwsh 7. Os testes do kit rodam só aqui, nunca no
 1. Lição de método chega pelo `SpecSimpleKit/INBOX.md`; release no máximo uma vez por mês,
    com teste para cada mudança no motor.
 2. Orçamento de tamanho: `sdd-core.md` até 5 KB, `sdd-fluxo.md` até 14 KB,
-   Markdown gerenciado total até 40 KB.
+   Markdown gerenciado total até 40 KB (1 KB = 1024 bytes; decisão D9 da CHG-002).
 3. Peça nova só com gatilho de dor medido (lista em `SpecSimpleKit/Metodologia SDD.ai`, §9).
 4. Fonte dos scripts em ASCII e compatível com PowerShell 5.1 e 7.
 5. Toda release atualiza `docs/diagnostico-comparativo.html`: versão e data
