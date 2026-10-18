@@ -38,7 +38,7 @@ escrita no levantamento é hipótese; caminho citado é conferido no código.
 | Nível | Quando | Documento | DoD |
 |---|---|---|---|
 | Trivial | bugfix localizado, texto, lint, ajuste mecânico | mensagem de commit | `sdd check` verde; bugfix com teste do trecho |
-| Pequeno | ajuste em fluxo existente, sem contrato nem capacidade nova | `## Tasks` no item do backlog | tasks fechadas, `sdd test` em cada RED/GREEN, `sdd validate` verde, revisão independente do diff se houver lógica |
+| Pequeno | ajuste em fluxo existente, sem contrato nem capacidade nova | `## Tasks` no item do backlog | execução agrupada por suíte/alvo com tags de cobertura, `sdd validate` verde, revisão independente do diff se houver lógica |
 | Feature | capacidade ou contrato novo, ou risco declarado pelo projeto | change completa | `sdd goal NN` = `GOAL PASS` |
 
 **Promoção automática para feature:** contrato público (API, formato de
@@ -49,14 +49,15 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 
 ## 4. Etapas e portões
 
+Depois de P1, prossiga sem pedir nova autorização: reserve os IDs no índice, complete plano, tasks agrupadas e análise e apresente P2 para a change inteira. Depois de P2, implemente as tasks como plano de trabalho, sem portões por item. Se uma decisão mudar o escopo aprovado, registre a dúvida e volte à clarificação.
+
 | # | Etapa | Saída | Status |
 |---|---|---|---|
-| 1 | Especificação | Por quê + deltas com cenários `SPEC-<DOM>-NNN/Cn` | `Draft` |
-| 2 | Clarificação | `## Perguntas em aberto` vazia; respostas viram `D<n>` | **P1**: frase do usuário → `sdd approve NN P1 --frase` → `Approved` |
-| 3 | Plano | Decisões, Contratos, Invariantes por risco, `impact` | `Approved` |
-| 4 | Tarefas | `## Tasks` RED → GREEN → REFACTOR por cenário | `Approved` |
-| 5 | Análise (só feature) | `## Análise pré-implementação` | **P2**: idem com `P2` → `In-Implementation` + `base_ref` |
-| 6 | Implementação | código + testes + evidência; verificador; `GOAL PASS` | `In-Implementation` |
+| 1 | Documento da change | Problema, deltas e cenários `SPEC-<DOM>-NNN/Cn` | `Draft` |
+| 2 | Aprovação do escopo | `## Perguntas em aberto` vazia; respostas viram `D<n>` | **P1** aprova a change inteira: frase do usuário → `sdd approve NN P1 --frase` → `Approved` |
+| 3 | Plano e tasks | Decisões, contratos, riscos, `impact`, tasks agrupadas por alvo/suíte | `Approved` |
+| 4 | Aprovação da execução | Análise completa, cobertura e tarefas para a change inteira | **P2** aprova a change inteira: `sdd approve NN P2 --frase` → `In-Implementation` + `base_ref` |
+| 5 | Implementação e fecho | código + testes + evidência agrupada; validate, verificador e goal da change inteira | `In-Implementation` |
 | ↺ | Archive (a pedido do usuário) | deltas na spec viva; pasta em `concluidas/` | `Done` |
 
 - **Clarificação:** só vira pergunta o que muda o resultado (regra,
@@ -71,10 +72,10 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
   responde se é automatizável. O padrão é teste. Manual só para hardware,
   instalador ou sensação de jogo, em até 3 ou 4 passos, verificado por log ou
   consulta, nunca pelo relato.
-- **Tamanho:** a change mira até ~250 linhas e não carrega diário de
-  revisões (isso vai para o `verify.md` e para o commit). Acima de ~20
-  cenários, 3 requisitos, 2 capacidades ou 40 arquivos no `impact`, recomende
-  dividir antes do P1; quem decide é o usuário.
+- **Tamanho por change:** no máximo 1 capacidade, 2 requisitos, 8 cenários,
+  10 arquivos fonte/teste do produto e 250 linhas em `change.md` (origem,
+  ledger e relatório fora da contagem). A spec viva pode ser grande. Excedeu
+  qualquer limite: divida em changes encadeadas antes do P1.
 
 ## 5. Change: campos e seções lidos pelo motor
 
@@ -86,10 +87,15 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 - Seções de título fixo: `Perguntas em aberto`, `Análise pré-implementação`,
   `Tasks` (com a subseção `Pós-GOAL`, que o goal ignora), `Exceções`,
   `Aprovações` (só o `sdd approve` grava).
-- Linhas de evidência: `- [x] RED (Cn): <alvo do sdd test> -> Falha esperada: <asserção>`
-  e `- [x] GREEN (Cn): <alvo> -> passou`. O alvo é a string exata passada ao
-  `sdd test`. O goal exige RED e GREEN com lastro para cada `Scenario: Cn`
-  dos deltas. Cenário só provável à mão: `- [x] MANUAL (Cn): <roteiro de até
+- Linhas de evidência: `- [x] RED (C1,C2): <alvo do sdd test> -> Falha esperada: <asserção>`
+  e `- [x] GREEN (C1,C2): <alvo> -> passou`. O alvo é a string exata passada ao
+  `sdd test`. Cada invocação pode cobrir vários cenários; o goal agrega as tags
+  RED e GREEN e exige cobertura completa da change, sem exigir invocação por
+  cenário. Cada teste/assert mantém sua tag `SPEC-<DOM>-NNN/Cn`.
+- Tasks descrevem fases executáveis (RED, GREEN, REFACTOR) por suíte/alvo,
+  não uma aprovação ou validação por requisito, cenário ou task. Uma exceção
+  só pode ser definida por limitação técnica demonstrada no plano.
+- Cenário só provável à mão: `- [x] MANUAL (Cn): <roteiro de até
   4 passos> -> verificado por <quem>` (o goal lista como não verificado por
   máquina).
 - O fecho (validate, verificador, goal) fica na subseção `Pós-GOAL` ou fora
@@ -130,7 +136,8 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
   arquivo; o teste retroativo remove o marcador antes dessa data.
 - **Spike** fica fora do código de produção; o que sobreviver entra pelo RED.
 - **Evidência mínima por tipo:** bugfix = RED que reproduz o bug no código
-  anterior à correção; feature = RED por cenário + GREEN; refactor = suíte do
+  anterior à correção; feature = RED e GREEN agregados por suíte/alvo, com
+  cobertura completa das tags no goal; refactor = suíte do
   escopo igual antes e depois; dependência = changelog citado + `validate`;
   infra/config = backup ou rollback descrito + verificação por comando;
   asset/conteúdo = teste que carrega e afirma a ligação; sensação/playtest =
@@ -146,7 +153,7 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 - Cada teste que cobre um cenário carrega a tag literal `SPEC-<DOM>-NNN/Cn`
   no nome, descrição, atributo ou comentário colado ao teste (forma da stack
   em `rastreio.molde` do perfil). `<DOM>` tem 2 a 8 letras maiúsculas.
-- O ID é reservado no `_index.md` no P1. O contador só sobe; ID removido
+- O ID é reservado no `_index.md` depois do P1 e antes do P2. O contador só sobe; ID removido
   nunca volta e vai para `Requisitos removidos` da spec viva.
 
 ## 8. Desfecho tipado e catch-all
@@ -169,7 +176,7 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 4. Acrescente `CHG-NNN | data | efeito` no histórico da spec viva.
 5. `git mv` da pasta para `concluidas/` e `status: Done`.
 
-Quem arquiva por último faz o rebase sobre a spec viva já atualizada. Achado
+Quem arquiva por último faz o rebase sobre a spec viva já atualizada. A decisão de archive é do usuário. Achado
 depois do archive que muda requisito abre change nova.
 
 ## 10. Loop, paralelismo e estado

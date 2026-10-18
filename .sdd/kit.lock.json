@@ -1,26 +1,26 @@
 {
     "kit_versao":  "0.1.0",
-    "fonte":  "C:\\_Projetos\\SDD-TDDkit\\SpecSimpleKit",
-    "fonte_commit":  "e24ea4eb219191231d3667de2be677ffb8dfdb61",
+    "fonte":  "C:\\_Projetos\\Agentic AI Engineer\\ferramentas de estudo\\SDD-TDDkit\\SpecSimpleKit",
+    "fonte_commit":  "cf9dd71d0527c8239fcd6652745210f91e9c09a5",
     "perfil_origem":  "powershell",
-    "gravado_em":  "2026-10-14T19:32:29Z",
+    "gravado_em":  "2026-10-18T21:21:12Z",
     "bloco_agents":  "525bd10072f98d7f6c3a1aa37c6f861e61bf4fd127c6d3b3695f710667bd0757",
     "arquivos":  {
-                     ".agents/rules/sdd-core.md":  "4a22c1f5ff80bd4480ec43bcdf6dc971014a0992bd4b93cdbdbb0a953dcce651",
-                     ".agents/rules/sdd-fluxo.md":  "75f686ebda9f7d61a6b953f82969d7d96bfd57264c7266bb50128dc161ea5e7b",
+                     ".agents/rules/sdd-core.md":  "82450c84e0c520e60e7c134d456a1befa4847e9b29f5afcbc13e077128d26383",
+                     ".agents/rules/sdd-fluxo.md":  "96d9bff628127bf430d5219b01a741b40ad38ffc57cb306b50a63afe042e884d",
                      ".agents/rules/sdd-revisao.md":  "f0ddfdab785d38fb1fa235fc2056a6b4aa416397724fa6985aa76fc648423578",
-                     ".agents/skills/backlog-refinement/SKILL.md":  "8febf9b93f29dde7e3a4217ffafbf048ed1a802abcd80cdb46eb93ec988583bd",
+                     ".agents/skills/backlog-refinement/SKILL.md":  "703419718a28ddd7930bd4807063ab07a8948931a9cbddb65b8fea22ac6d17a3",
                      ".agents/skills/sdd-bootstrap/SKILL.md":  "5ed2dd9316c8ce3676bd66c29ccc3300f845a9f8413f8de9afa9e61d642ccc6a",
-                     ".agents/skills/sdd-verify/SKILL.md":  "65213a24c2b26ab72fb9c93aff1b830c14604b7142285d9c5de399959fac25ab",
+                     ".agents/skills/sdd-verify/SKILL.md":  "c9479fad6709df4edcaa36106654bf99afbe409db850f0ad0b137b310917ee45",
                      ".claude/agents/sdd-verifier.md":  "94f11ef815b40fda3cc81ec2c1115d6838145bedadc6a4dba877f972596e71c6",
                      ".claude/rules/sdd-fluxo.md":  "040f61b20f0bc2d0e6e695e804121ec1e079d1f4a511159ac424dd4bde933bb6",
                      ".claude/skills/backlog-refinement/SKILL.md":  "55bfe293186f87f589faa72eedfc9e60bfdc03d6021aba4e97648c088df58662",
-                     ".claude/skills/learn/SKILL.md":  "2f6d1283a2e0b38132865fa7042cf59267e7526eeb6ab153049b1a05a18bfa22",
+                     ".claude/skills/learn/SKILL.md":  "4aee770e56c26ed2fc51fb7059f0e9d4050c931eccf204b0d3abc1a627c96e2e",
                      ".claude/skills/sdd-bootstrap/SKILL.md":  "caacf430d1c8619d92c85cf574ab77da796da24160edc00b6d7b15fb9e352bcf",
                      ".claude/skills/sdd-verify/SKILL.md":  "fd7a1d050724d4713133176929528a4f94f335937dc47463b04e013a51a4dd19",
                      "docs/Specs/_templates/backlog.md":  "7ed8d734063f335096240264f8eade49aa892bffab8daa155cad79c42affd033",
                      "docs/Specs/_templates/change.md":  "5df986fdd6e93f259393b3dadf9a3320f06be1c37b492a4bb4141eece1ea8642",
                      "docs/Specs/_templates/spec.md":  "d4583a74c977dd07aa0d8adcd450a43e10853599208c46641c85ad818acb5262",
-                     "tools/sdd/sdd.ps1":  "5f7a81078359300f2862a3463291ea7be2c5612b8f42368ef2f684b5fcfb51d7"
+                     "tools/sdd/sdd.ps1":  "7e659f90f7d511306f1c0249cd9def6dde0a211f431885ee32b09ea68932b171"
                  }
 }

@@ -40,15 +40,22 @@ try {
   # A1b: cenario declarado sem RED/GREEN reprova; com RED/GREEN com lastro, passa nesse criterio.
   Write-Arq $d 'src/mul.js' "export function mul(a, b) { return 0; }`n"
   Write-Arq $d 'test/mul.test.js' "import { test } from 'node:test';`nimport assert from 'node:assert/strict';`nimport { mul } from '../src/mul.js';`ntest('[SPEC-CALC-002/C1] mul', () => { assert.equal(mul(2, 3), 6); });`n"
-  $deltas = "## Deltas`n`n#### Requirement: SPEC-CALC-002 x`n`n##### Scenario: C1 - multiplica`n`n##### Scenario: C2 - zero`n`n## Tasks`n`n- [x] RED (C1): test/mul.test.js -> Falha esperada: 6`n- [x] GREEN (C1): test/mul.test.js -> passou`n"
+  $deltas = "## Deltas`n`n#### Requirement: SPEC-CALC-002 x`n`n##### Scenario: C1 - multiplica`n`n##### Scenario: C2 - zero`n`n## Tasks`n`n- [x] RED (C1,C2): test/mul.test.js -> Falha esperada: 6`n- [x] GREEN (C1,C2): test/mul.test.js -> passou`n"
   Write-Change $d '2-cenarios' 'CHG-002' "impact:`n  modified_files: []`n  new_files: [src/mul.js, test/mul.test.js]`n" $deltas
   Remove-Item -LiteralPath (Join-Path $d 'Docs/Specs/changes/1-sem-teste') -Recurse -Force
   $null = Invoke-Sdd $d @('test', 'test/mul.test.js')
   Write-Arq $d 'src/mul.js' "export function mul(a, b) { return a * b; }`n"
   $null = Invoke-Sdd $d @('test', 'test/mul.test.js')
   $r = Invoke-Sdd $d @('goal', '2', '--pre-verify')
-  Assert-Contem 'A1b cenario C2 sem RED/GREEN reprova' $r.Texto 'cenario C2 sem RED e GREEN'
-  Assert-Igual 'A1b cenario C1 com lastro nao reprova' ($r.Texto -match 'cenario C1 sem') $false
+  Assert-Igual 'A1b cenario C2 coberto pela mesma suite passa' ($r.Texto -match 'cenario C2 sem') $false
+  Assert-Igual 'A1b cenario C1 coberto pela mesma suite passa' ($r.Texto -match 'cenario C1 sem') $false
+
+  # A1c: cada fase deve cobrir todos os cenarios; GREEN parcial continua falhando.
+  $deltasParciais = $deltas.Replace('GREEN (C1,C2)', 'GREEN (C1)')
+  Write-Change $d '2-cenarios' 'CHG-002' "impact:`n  modified_files: []`n  new_files: [src/mul.js, test/mul.test.js]`n" $deltasParciais
+  $r = Invoke-Sdd $d @('goal', '2', '--pre-verify')
+  Assert-Contem 'A1c cobertura GREEN incompleta reprova C2' $r.Texto 'cenario C2 sem RED e GREEN'
+  Write-Change $d '2-cenarios' 'CHG-002' "impact:`n  modified_files: []`n  new_files: [src/mul.js, test/mul.test.js]`n" $deltas
 
   # A2: arquivo que entrou por commit depois do base_ref vira aviso, nao FAIL.
   Invoke-Git $d @('add', '-A') | Out-Null; Invoke-Git $d @('commit', '-qm', 'trabalho') | Out-Null

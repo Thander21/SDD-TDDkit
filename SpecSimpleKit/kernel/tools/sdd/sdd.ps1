@@ -392,6 +392,50 @@ function Find-SddChange([string]$NN) {
 
 function Get-SddAtivas { return @(Get-SddChanges | Where-Object { $_.Pasta -eq 'changes' -and (Get-SddStatus $_) -eq 'In-Implementation' }) }
 
+# Archive consumes only final, current evidence. File moves do not stage the
+# archive or commit it; a later commit records the path changes.
+function Invoke-SddArchive([string[]]$Argv) {
+  if ($Argv.Count -ne 1) { throw 'uso: sdd archive <NN>' }
+  $c = Find-SddChange ([string]$Argv[0])
+  if ((Get-SddStatus $c) -ne 'In-Implementation') { throw 'archive exige change em In-Implementation' }
+  $goalPath = Join-Path $script:Estado ("goal-" + $c.Nome + '.json')
+  $goalTxt = Read-SddTexto $goalPath
+  if (-not $goalTxt) { throw 'archive exige GOAL PASS final registrado pelo motor' }
+  try { $goal = $goalTxt | ConvertFrom-Json } catch { throw 'registro de goal invalido' }
+  if ($goal.resultado -ne 'GOAL PASS' -or (Get-SddProp $goal 'pre_verify' $false)) { throw 'archive exige ultimo GOAL PASS final (nao pre-verify)' }
+  $arvore = Get-SddArvore
+  if ($goal.arvore -ne $arvore) { throw 'GOAL PASS desatualizado: a arvore atual mudou' }
+  $verifyPath = Join-Path $c.Dir 'verify.md'
+  $verify = Read-SddTexto $verifyPath
+  if (-not $verify -or $verify -notmatch '(?m)^Veredito:\s*APROVADO\s*$') { throw 'archive exige verify.md com Veredito: APROVADO' }
+  $mv = [regex]::Match($verify, '(?m)^arvore:\s*([0-9a-f]+)\s*$')
+  if (-not $mv.Success -or $mv.Groups[1].Value -ne $arvore) { throw 'verify.md ausente ou desatualizado para a arvore atual' }
+  $root = Join-Path $script:Raiz (Get-SddSpecsRoot)
+  $dest = Join-Path (Join-Path $root 'concluidas') $c.Nome
+  if (Test-Path -LiteralPath $dest) { throw "destino ja existe: $($c.Rel.Replace('/changes/', '/concluidas/'))" }
+  $source = $c.Dir
+  $changeTxt = Read-SddTexto $c.Arquivo
+  $novo = [regex]::Replace($changeTxt, '(?m)^status:\s*In-Implementation\s*$', 'status: Done', 1)
+  if ($novo -eq $changeTxt) { throw 'nao foi possivel preparar status Done' }
+  try {
+    $destParent = Split-Path -Parent $dest
+    if (-not (Test-Path -LiteralPath $destParent)) { New-Item -ItemType Directory -Path $destParent -Force | Out-Null }
+    Write-SddTextoAtomico $c.Arquivo $novo
+    if (Test-Path -LiteralPath $dest) { throw 'destino apareceu durante archive; nenhuma sobrescrita feita' }
+    [System.IO.Directory]::Move($source, $dest)
+  } catch {
+    if ((Test-Path -LiteralPath $dest -PathType Container) -and -not (Test-Path -LiteralPath $source)) {
+      try { [System.IO.Directory]::Move($dest, $source) } catch { throw ("archive falhou e rollback do caminho tambem falhou; confira '$dest' e '$source': " + $_.Exception.Message) }
+    }
+    if (Test-Path -LiteralPath $source -PathType Container) {
+      try { Write-SddTextoAtomico (Join-Path $source 'change.md') $changeTxt } catch { throw ("archive falhou e rollback do status tambem falhou; confira '$source': " + $_.Exception.Message) }
+    }
+    throw ("archive falhou; origem restaurada: " + $_.Exception.Message)
+  }
+  Write-SddLinha ("ARCHIVED: " + $c.Rel.Replace('/changes/', '/concluidas/'))
+  return 0
+}
+
 function Test-SddAprovacao([string]$Corpo, [string]$Portao) {
   $sec = Get-SddSecao $Corpo 'Aprovacoes'
   if ($null -eq $sec) { return $false }
@@ -834,8 +878,8 @@ function Invoke-SddGoal([string[]]$Argv) {
     $ev = @()
     try { $ev = @(Get-SddLedgerLinhas $ledgerArq) } catch { Add-Falha 'evidencia' @($_.Exception.Message) }
     $semLastro = New-Object System.Collections.ArrayList
-    # Cenario -> fases com lastro. Toda change precisa de evidencia: um RED e um
-    # GREEN com lastro por cenario declarado nos deltas (ou, sem cenario, ao menos um par).
+    # Cenario -> fases cobertas. Cada execucao pode listar varias tags; o goal
+    # agrega a cobertura da change inteira sem exigir uma chamada por cenario.
     $cobertura = @{}
     $pares = 0
     foreach ($m in [regex]::Matches($ativa, '(?m)^\s*-\s*\[[xX]\]\s*(RED|GREEN|MANUAL)\b([^:\r\n]*):\s*(.+?)\s*(->|$)')) {
@@ -876,7 +920,7 @@ function Invoke-SddGoal([string[]]$Argv) {
       foreach ($cn in $cenarios) {
         $v = 0
         if ($cobertura.ContainsKey($cn)) { $v = $cobertura[$cn] }
-        if ($v -ne 3) { [void]$semLastro.Add("cenario $cn sem RED e GREEN com lastro (linhas '- [x] RED ($cn): <alvo> ->' e '- [x] GREEN ($cn): <alvo> ->')") }
+        if ($v -ne 3) { [void]$semLastro.Add("cenario $cn sem RED e GREEN agregados com lastro (inclua a tag $cn nas linhas da suite)") }
       }
     } elseif ($pares -ne 3) { [void]$semLastro.Add('change sem evidencia de teste: nenhum cenario nos deltas e nenhum par RED/GREEN com lastro') }
     if ($semLastro.Count) { Add-Falha 'evidencia sem lastro' @($semLastro) }
@@ -1255,6 +1299,7 @@ function Show-SddAjuda {
     '  test <alvo> [--change NN] [--sonda carga|red|zero]   roda um alvo e grava a evidencia',
     '  spec-lint              confere frontmatter, portoes e IDs das changes',
     '  goal <NN> [--pre-verify]   condicao de parada da change (GOAL PASS|FAIL)',
+    '  archive <NN>             arquiva change com GOAL PASS e verify da arvore atual',
     '  approve <NN> P1|P2 [--frase "..."]  aprova portao: no seu terminal, ou pela IA com a sua frase do chat',
     '  verify-record <NN> APROVADO|REPROVADO [--arquivo f]   grava o relatorio do verificador',
     '  commit-gate            usado pelo pre-commit: exige check/validate verde da mesma arvore',
@@ -1290,6 +1335,7 @@ function Invoke-SddMain([string[]]$Argv) {
         if ($l.Status -eq 'FAIL') { return 1 } else { return 0 }
       }
       'goal' { return (Invoke-SddGoal $resto) }
+      'archive' { return (Invoke-SddArchive $resto) }
       'approve' { return (Invoke-SddApprove $resto) }
       'verify-record' { return (Invoke-SddVerifyRecord $resto) }
       'commit-gate' { return (Invoke-SddCommitGate) }

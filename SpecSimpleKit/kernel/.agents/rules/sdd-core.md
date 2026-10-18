@@ -69,7 +69,7 @@ não há sandbox.
 |---|---|
 | Portão humano | `sdd approve` recusa a IA sem `--frase` e frase sem aprovação, portão e número; o P2 e o goal exigem a linha P1; o hook de edição nega gravar status, `base_ref` ou linha de aprovação (Claude; no Antigravity, não confirmado) |
 | Fonte normativa | approve e goal recusam risco de `projeto.riscos_com_fonte` sem `fonte_normativa` |
-| Evidência de teste | `sdd test` grava resultado, contagens e árvore; o goal exige RED e GREEN com lastro por cenário; o hook nega editar `evidence.jsonl`, `verify.md` e `.sdd/state/` |
+| Evidência de teste | `sdd test` grava resultado, contagens e árvore; o goal exige RED/GREEN agrupado que cubra todas as tags de cenário da change; o hook nega editar `evidence.jsonl`, `verify.md` e `.sdd/state/` |
 | Pronto | `sdd goal <NN>`: perfil calibrado, status e portões, tasks, evidência, `validate` da árvore atual, `impact`, exceções e verificador da árvore atual |
 | Commit validado | pre-commit `sdd commit-gate` (lembrete; `--no-verify` burla) + confirmação de `git commit`/`git push` |
 | Comando destrutivo | guard da máquina pede confirmação; escapa por script novo, subprocesso ou alias |

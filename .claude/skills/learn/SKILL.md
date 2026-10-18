@@ -30,6 +30,10 @@ confiável, diga que trabalhou só com a conversa.
 - Três armadilhas no mesmo território: proponha uma regra de domínio com
   `paths`/`glob` ou um molde de persona.
 - Contradição com regra existente: aponte e pergunte; não sobrescreva.
+- No fecho de change, faça uma única passagem de learn sobre a change completa
+  e proponha juntos os encaminhamentos. Não rode learn nem peça validação por
+  cenário, requisito ou task; mantenha regras, backlog, preferência pessoal e
+  upstream nos destinos próprios acima.
 
 ## 2. Depois de aplicar
 

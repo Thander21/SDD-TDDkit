@@ -19,8 +19,9 @@
 | Domínio | Último ID |
 |---|---|
 | `INST` | 005 |
-| `MOTOR` | 001 |
+| `MOTOR` | 002 |
 | `GUARD` | 004 |
+| `FLUXO` | 001 |
 
 ## IDs reservados
 
@@ -36,3 +37,5 @@
 | SPEC-GUARD-003 | CHG-005 | guard |
 | SPEC-GUARD-004 | CHG-005 | guard |
 | SPEC-INST-005 | CHG-005 | instalador |
+| SPEC-FLUXO-001 | CHG-006 | fluxo |
+| SPEC-MOTOR-002 | CHG-007 | motor |

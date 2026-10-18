@@ -38,20 +38,26 @@ Pré-condição: `Prontidão: Pronto` e nenhuma pergunta sem resposta.
 | Nível | Saída |
 |---|---|
 | Trivial | nota em `## Encaminhamento`; segue direto para implementação quando o usuário pedir |
-| Pequeno | `## Tasks` no próprio item (RED → GREEN → REFACTOR, com `sdd test`) |
+| Pequeno | `## Tasks` no próprio item; RED/GREEN por suíte ou alvo agrupado, com tags de cobertura |
 | Feature | `<specs>/changes/NN-slug/change.md` pelo molde, `status: Draft` |
 
 - `NN` segue o número do item; várias features do mesmo item usam os
   próximos números livres em `backlog/`, `changes/` e `concluidas/`.
 - Cada RF/RN vira cenário `SPEC-<DOM>-NNN/Cn`. Pergunta nova vai para
   `## Perguntas em aberto` da change. Registre a change em `## Encaminhamento`.
+- Para feature, limite cada change a 1 capacidade, 2 requisitos, 8 cenários,
+  10 arquivos fonte/teste do produto e 250 linhas em `change.md`. Spec viva pode
+  crescer; excedentes viram changes menores encadeadas antes do P1.
+- P1 aprova o escopo e documento da change inteira. Após completar plano,
+  tasks agrupadas e análise, P2 aprova a execução inteira; não peça aceite por
+  requisito, cenário ou task.
 - Mova o item do backlog para `changes/NN-slug/origem/` (`git mv` se
   versionado): a change guarda a documentação que a gerou. Item com várias
   features fica na pasta da primeira; as seguintes citam esse caminho.
 
-**Parada:** a IA nunca muda a change para `Approved`. Diga ao usuário que,
-com as perguntas respondidas, ele aprova escrevendo no chat "aprovo P1 da
-change NN"; só então rode `sdd approve NN P1 --frase "<a frase dele>"`.
+**Parada:** a IA nunca muda a change para `Approved`. Apresente o documento
+completo e diga que o P1 aprova o escopo integral: o usuário escreve no chat
+"aprovo P1 da change NN"; só então rode `sdd approve NN P1 --frase "<a frase dele>"`.
 
 ## Verificação antes de encerrar
 

@@ -7,6 +7,8 @@
 
 ## 1. Do pedido ao código pronto
 
+Limites por change: 1 capacidade, 2 requisitos, 8 cenários, 10 arquivos fonte/teste do produto e 250 linhas em `change.md`. Spec viva pode crescer sem esse teto. Acima de qualquer limite, divida em changes encadeadas antes do P1.
+
 Você só escreve no chat. A IA roda os comandos; o motor (`tools/sdd/sdd.ps1`)
 e os guards conferem e gravam.
 
@@ -26,37 +28,36 @@ e os guards conferem e gravam.
                                       │
  "abra o item NN" ────────────► cria changes/NN-slug/change.md (Draft)
                                MOVE o item para changes/NN-slug/origem/
-                               reserva os IDs SPEC-DOM-NNN no _index.md
+                               registra os IDs SPEC-DOM-NNN no _index.md
                                       │
                          ┌────────────┴────────────┐
                          │ Etapa 1  Especificação  │  Por quê + cenários DADO/QUANDO/ENTÃO
                          │ Etapa 2  Clarificação   │  "Perguntas em aberto" vazia
                          └────────────┬────────────┘
                                       │
- ╔════════════ P1 ═════════════╗      │
+ ╔════════════ P1: documento inteiro ═╗      │
  ║ você no chat: "aprovo P1    ║ ─────┼──────────────────────────► sdd approve NN P1 --frase
  ║  da change NN"              ║      │                              status: Approved
  ╚═════════════════════════════╝      │
                          ┌────────────┴────────────┐
-                         │ Etapa 3  Plano          │  Decisões, Contratos, Invariantes, impact
-                         │ Etapa 4  Tasks          │  RED → GREEN → REFACTOR por cenário
-                         │ Etapa 5  Análise        │  cenário sem task? arquivo fora do impact?
+                         │ Etapa 3  Plano + Tasks  │  Decisões, contratos, impact, suites agrupadas
+                         │ Etapa 4  Análise        │  cobertura e escopo da change inteira
                          └────────────┬────────────┘
- ╔════════════ P2 ═════════════╗      │
+ ╔════════════ P2: change inteira ═══╗      │
  ║ "aprovo P2 da change NN"    ║ ─────┼──────────────────────────► sdd approve NN P2 --frase
  ╚═════════════════════════════╝      │                              status: In-Implementation
                                       │                              base_ref = HEAD
                          ┌────────────┴────────────┐
-                         │ Etapa 6  Implementação  │
-                         │  por cenário:           │
-                         │   escreve o teste ──────┼──► sdd test <alvo>  → RED  (falha)
-                         │   escreve o código ─────┼──► sdd test <alvo>  → GREEN (passou)
-                         │   refatora              │       grava evidence.jsonl
+                         │ Etapa 6  Implementação da change inteira  │
+                         │  por suíte/alvo:        │
+                         │   suíte completa ──────┼──► sdd test <alvo>  → RED (falha)
+                         │   implementação ───────┼──► sdd test <alvo>  → GREEN (passou)
+                         │   refatora              │       tags C1..Cn; goal agrega a change inteira
                          └────────────┬────────────┘
                                       │
                                sdd validate (gates completos) ──► last-full.json
                                verificador independente ────────► verify.md (APROVADO)
-                               sdd goal NN ─────────────────────► GOAL PASS / GOAL FAIL
+                               sdd goal NN ─────────────────────► GOAL PASS / GOAL FAIL da change inteira
                                       │
  "arquive a change NN" ───────► deltas viram a spec viva em capabilities/<cap>/spec.md
                                pasta inteira (com origem/) → concluidas/NN-slug/
@@ -120,9 +121,9 @@ citada no registro.
 | Refinar | "refine o item NN" | requisitos conferidos no código e perguntas |
 | Pronto | "item NN Pronto" (depois de ler e editar) | confirmação e a sugestão de abrir a change |
 | Abrir | "abra o item NN" | `change.md` em Draft e o que ler antes do P1 |
-| P1 | "aprovo P1 da change NN" | plano, tasks e análise; o que ler antes do P2 |
-| P2 | "aprovo P2 da change NN" | implementação cenário a cenário, com RED e GREEN |
-| Fecho | "verifique a change NN" | veredito do verificador e `GOAL PASS`/`FAIL` |
+| P1 | "aprovo P1 da change NN" | plano, tasks e análise completas para P2; P1 vale para o documento inteiro |
+| P2 | "aprovo P2 da change NN" | implementação da change inteira; RED/GREEN agrupados por suíte, tags por cenário |
+| Fecho | "verifique a change NN" | validate, verificador independente e `GOAL PASS`/`FAIL` da change inteira |
 | Archive | "arquive a change NN" | spec viva atualizada e a change em `concluidas/` |
 
 Toda resposta da IA termina com o próximo passo.

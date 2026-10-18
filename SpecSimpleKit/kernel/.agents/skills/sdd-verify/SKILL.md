@@ -5,7 +5,7 @@ description: "Verificador independente de uma change spec-driven: reexecuta os t
 
 # Verificação independente (sdd-verify)
 
-Quem implementou não declara a própria change concluída. Esta verificação
+Quem implementou não declara a própria change concluída. Uma execução independente verifica a change completa, não cada requisito ou task separadamente. Esta verificação
 roda em **contexto limpo**:
 
 - no Claude Code, pelo subagente `sdd-verifier`;
@@ -20,15 +20,17 @@ relatório, gravado pelo motor.
 1. Leia o `change.md` e siga `.agents/rules/sdd-revisao.md` §3 (Verify Pass
    de change) e §4 (prova de mutação).
 2. RED: confira pelo `evidence.jsonl` (resultado `falha`, anterior ao
-   `passou` do mesmo alvo); não reexecute. GREEN: rode `sdd test <alvo>
-   --change NN` para cada alvo, um por vez; o seu GREEN é o GREEN
-   independente. RED de bugfix sem prova de que rodou no código com o bug:
+   `passou` do mesmo alvo); não reexecute. GREEN: rode uma vez cada alvo/suíte
+   agrupado com `sdd test <alvo> --change NN`; o seu GREEN é o GREEN
+   independente da change completa. Compare a união das tags cobertas com todos
+   os cenários da change. RED de bugfix sem prova de que rodou no código com o bug:
    achado PLAUSÍVEL, com a prova de mutação (§4) para quem implementou.
 3. Rode `sdd goal NN --pre-verify` e transcreva a última linha.
 4. Confira os deltas contra a spec viva de cada capacidade: `MODIFIED` e
    `REMOVED` citam requisito que existe hoje; `ADDED` usa ID reservado no
    `_index.md`, sem colisão; cada cenário tem teste com a tag
-   `SPEC-<DOM>-NNN/Cn` (`rastreio.regex` do perfil).
+   `SPEC-<DOM>-NNN/Cn` (`rastreio.regex` do perfil); cobertura e veredito são
+   da change inteira, sem aprovação ou relatório por requisito/task.
 5. Liste o que não conseguiu ler (binários, cenas, Blueprint, assets).
 6. Classifique cada achado (CONFIRMADO, PLAUSÍVEL, DESCARTADO) com cenário de
    falha e evidência desta rodada.

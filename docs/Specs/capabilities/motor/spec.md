@@ -47,6 +47,42 @@ recusa.
 > Contrato: `sdd approve <NN> P1|P2 [--frase "<texto>"]` → `APROVADO` (exit 0) | `RECUSADO` (exit 1); função `Test-SddFraseAprovacao`.
 > Testes: `SpecSimpleKit/tests/test_motor_aprovacao.ps1` (tags `SPEC-MOTOR-001/C1..C4`).
 
+### Requirement: SPEC-MOTOR-002 — Archive guardado por goal, verify e árvore atual
+
+O motor DEVE mover uma change para `concluidas/` e gravar `Done` somente se
+houver GOAL PASS final e `verify.md` APROVADO para o mesmo valor `arvore`
+retornado por `Get-SddArvore` na chamada. Recusa ou falha preserva os arquivos.
+
+#### Scenario: C1 — Sem GOAL PASS final
+
+- **DADO** change em implementação sem goal, com GOAL FAIL, só pre-verify ou verify ausente/reprovado
+- **QUANDO** roda `sdd archive NN`
+- **ENTÃO** recusa e mantém status e árvore da change inalterados
+
+#### Scenario: C2 — GOAL PASS e verificação independentes na mesma árvore
+
+- **DADO** change em implementação cujo último goal é GOAL PASS e cujo verify.md é APROVADO para o mesmo valor `arvore` calculado na chamada
+- **QUANDO** roda `sdd archive NN` e o destino não existe
+- **ENTÃO** o motor grava Done e move a pasta completa para `concluidas/`
+
+#### Scenario: C3 — GOAL PASS desatualizado
+
+- **DADO** GOAL PASS registrado e valor `arvore` diferente do valor calculado agora pelo motor
+- **QUANDO** roda `sdd archive NN`
+- **ENTÃO** recusa sem mover nem alterar a change
+
+#### Scenario: C4 — Destino existente ou erro de preparação
+
+- **DADO** uma change elegível e destino preexistente, ou falha ao preparar a movimentação
+- **QUANDO** roda `sdd archive NN`
+- **ENTÃO** recusa sem sobrescrever destino e, em caso de falha, restaura status e caminho originais
+
+#### Scenario: C5 — Update mantém comandos existentes e acrescenta archive
+
+- **DADO** um projeto instalado antes de existir o comando archive
+- **QUANDO** roda `check` e `goal`, depois recebe update aditivo
+- **ENTÃO** `check` e `goal` continuam reconhecidos e o comando `archive` fica disponível
+
 ## Requisitos removidos
 
 | ID | Change | Motivo |
@@ -57,3 +93,4 @@ recusa.
 | Change | Data | Efeito |
 |---|---|---|
 | CHG-002 | 16/10/2026 | ADDED SPEC-MOTOR-001 (aprovação por frase no chat) |
+| CHG-007 | 18/10/2026 | ADDED SPEC-MOTOR-002 (archive guardado por goal, verify e árvore atual) |

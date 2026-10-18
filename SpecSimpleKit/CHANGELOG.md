@@ -2,6 +2,9 @@
 
 ## Não lançado
 
+- Changes completas têm gates P1/P2 únicos por documento; RED/GREEN pode ser agrupado por suíte/alvo com cobertura de cenários agregada no goal. Limites normais: até 2 capacidades relacionadas, 4 requisitos, 12 cenários, cerca de 20 arquivos de produto e 400 linhas no change.md. Excedentes exigem justificativa de coesão e validação no P1; specs vivas podem crescer sem teto de extensão.
+- `sdd archive <NN>` exige GOAL PASS final e `verify.md` APROVADO para a árvore atual; grava `Done` e move a change completa para `concluidas/` sem criar commit.
+
 - A ferramenta passa a se chamar SpecSimpleKit e mora em `SpecSimpleKit/`
   dentro do repositório SDD-TDDkit, cuja raiz é o projeto de desenvolvimento
   (com o próprio método). Identificadores técnicos seguem `sdd-kit`, para
