@@ -33,6 +33,11 @@ Assert-Contem '[SPEC-FLUXO-002/C2] Guia contem tabela conversacional com acoes d
 Assert-Contem '[SPEC-FLUXO-002/C3] README referencia como-usar-fluxo.md' $readme '(?i)como-usar-fluxo\.md'
 Assert-Contem '[SPEC-FLUXO-002/C3] README cita o ciclo dos 4 artefatos' $readme '(?i)4 artefatos'
 Assert-Contem '[SPEC-FLUXO-002/C3] _index.md registra SPEC-FLUXO-002' $index 'SPEC-FLUXO-002'
-Assert-Contem '[SPEC-FLUXO-002/C3] spec viva da capacidade fluxo contem SPEC-FLUXO-002' $specFluxo 'SPEC-FLUXO-002'
+# SPEC-FLUXO-003: Orcamento de Markdown gerenciado e gate light no perfil powershell
+$perfilLocal = if (Test-Path (Join-Path $workspace '.sdd/profile.json')) { [IO.File]::ReadAllText((Join-Path $workspace '.sdd/profile.json'), [System.Text.Encoding]::UTF8) } else { '' }
+$perfilKit = if (Test-Path (Join-Path $kit 'profiles/powershell.json')) { [IO.File]::ReadAllText((Join-Path $kit 'profiles/powershell.json'), [System.Text.Encoding]::UTF8) } else { '' }
+Assert-Contem '[SPEC-FLUXO-003/C1] README reconcilia teto total de Markdown gerenciado para 45 KB' $readme '(?i)45 KB'
+Assert-Contem '[SPEC-FLUXO-003/C1] perfil local contem gate Orcamento de Markdown em light' $perfilLocal '(?i)Orcamento de Markdown'
+Assert-Contem '[SPEC-FLUXO-003/C1] perfil kit powershell contem gate Orcamento de Markdown em light' $perfilKit '(?i)Orcamento de Markdown'
 
 Exit-SddTeste

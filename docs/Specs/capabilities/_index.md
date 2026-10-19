@@ -21,7 +21,7 @@
 | `INST` | 005 |
 | `MOTOR` | 002 |
 | `GUARD` | 004 |
-| `FLUXO` | 002 |
+| `FLUXO` | 003 |
 
 ## IDs reservados
 
@@ -40,3 +40,4 @@
 | SPEC-FLUXO-001 | CHG-006 | fluxo |
 | SPEC-FLUXO-002 | CHG-003 | fluxo |
 | SPEC-MOTOR-002 | CHG-007 | motor |
+| SPEC-FLUXO-003 | CHG-004 | fluxo |

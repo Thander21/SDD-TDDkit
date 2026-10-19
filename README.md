@@ -122,7 +122,7 @@ Specs vivas criadas:
 1. Lição de método chega pelo `SpecSimpleKit/INBOX.md`; release no máximo
    uma vez por mês, com teste para cada mudança no motor.
 2. Orçamento de tamanho: `sdd-core.md` até 5 KB, `sdd-fluxo.md` até 14 KB,
-   Markdown gerenciado total até 40 KB (1 KB = 1024 bytes; decisão D9 da CHG-002).
+   Markdown gerenciado total até 45 KB (1 KB = 1024 bytes; decisão D9 da CHG-002, atualizado no item 04 para acomodar sdd-revisao.md).
 3. Peça nova só com gatilho de dor medido (lista em `SpecSimpleKit/Metodologia SDD.ai`, §9).
 4. Fonte dos scripts em ASCII e compatível com PowerShell 5.1 e 7.
 5. Toda release atualiza `docs/diagnostico-comparativo.html` (versão, data,
