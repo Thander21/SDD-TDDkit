@@ -58,7 +58,8 @@ description: Núcleo do kit SDD — comportamento da IA, portões humanos, evid�
    commit e no fecho da change. Se quebrar pela alteração, reverta a causa;
    não suprima o erro.
 3. Resumo de 3 a 5 linhas: o que fazer agora, o que adiar e o próximo passo,
-   mais a linha **"Não verificado:"** com o que ficou sem prova.
+   mais a linha **"Não verificado:"** com o que ficou sem prova. Ao concluir
+   e arquivar uma change, sempre sugira o comando e a mensagem de commit pronta.
 
 ## O que é imposto e o que é honra
 

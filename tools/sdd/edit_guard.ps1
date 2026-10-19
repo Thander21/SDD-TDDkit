@@ -1,12 +1,13 @@
 # =====================================================================
-# sdd-kit | machine/edit_guard.ps1  (hook PreToolUse de EDICAO de arquivo)
+# sdd-kit | tools/sdd/edit_guard.ps1 (hook PreToolUse de EDICAO no projeto)
 # Claude Code (Write|Edit|NotebookEdit) e Antigravity (write_to_file |
 # replace_file_content | multi_replace_file_content).
 # - NEGA a IA gravar status Approved/In-Implementation, base_ref ou linha de
 #   aprovacao '(sdd approve' num change.md: portao e do usuario (sdd approve).
 # - NEGA editar evidence.jsonl e verify.md: so o motor grava.
 # - PERGUNTA ao gravar status Done (archive pedido pelo usuario), ao editar
-#   .sdd/profile.json (gates do projeto) e arquivo gerenciado pelo kit.
+#   .sdd/profile.json (gates do projeto), .agents/hooks.json, settings do Claude
+#   e arquivo gerenciado pelo kit.
 # Edicao via shell nao passa por aqui (o guard de comando cobre parte disso).
 # Compativel com Windows PowerShell 5.1 e PowerShell 7. Fonte em ASCII.
 # =====================================================================
@@ -30,13 +31,11 @@ function Get-SddStatusFm([string]$Texto) {
   if ($null -eq $Texto) { return '' }
   $m = [regex]::Match(($Texto -replace "`r`n", "`n"), '^---\n(.*?)\n---', [System.Text.RegularExpressions.RegexOptions]::Singleline)
   if (-not $m.Success) { return '' }
-  # Mesmo escalar que o motor le: aceita aspas simples ou duplas.
   $s = [regex]::Match($m.Groups[1].Value, '(?m)^status:\s*["'']?([A-Za-z-]+)')
   if ($s.Success) { return $s.Groups[1].Value }
   return ''
 }
 
-# Raiz do projeto (pasta com .sdd/profile.json acima do arquivo) e a raiz de specs dele.
 function Get-SddContextoProjeto([string]$Arquivo) {
   $d = Split-Path -Parent $Arquivo
   for ($i = 0; $i -lt 25 -and $d; $i++) {
@@ -95,7 +94,6 @@ try {
   if (-not $arq) { Write-SddResposta 'allow' ''; exit 0 }
   $p = $arq.Replace('\', '/')
   $pl = $p.ToLowerInvariant()
-  # Pasta de specs do projeto (projeto.specs_root); sem perfil, qualquer pasta 'specs'.
   $ctx = Get-SddContextoProjeto $arq
   $reSpecs = '/specs/'
   if ($ctx) { $reSpecs = '^' + [regex]::Escape(($ctx.Raiz + '/' + $ctx.Specs + '/').ToLowerInvariant()) }
@@ -103,6 +101,7 @@ try {
   if ($pl -match '/\.sdd/state/') { Write-SddResposta 'deny' '[sdd-kit] .sdd/state/ e estado do motor (validacoes, goal, sondas): so o sdd grava.'; exit 0 }
   if ($pl -match ($reSpecs + '.*(evidence\.jsonl|verify\.md)$') -or $pl -match '/specs/.+/(evidence\.jsonl|verify\.md)$') { Write-SddResposta 'deny' '[sdd-kit] evidence.jsonl e verify.md so sao gravados pelo motor (sdd test / sdd verify-record).'; exit 0 }
   if ($pl.EndsWith('/.sdd/profile.json')) { Write-SddResposta 'ask' '[sdd-kit] .sdd/profile.json define os gates: confirme que a edicao nao afrouxa nenhum.'; exit 0 }
+  if ($pl.EndsWith('/.agents/hooks.json') -or $pl -match '/\.claude/settings(\.local)?\.json$') { Write-SddResposta 'ask' '[sdd-kit] configuracao de guard do projeto: a IA nao pode editar settings/hooks de guard sem confirmacao. Confirme.'; exit 0 }
   if ($pl -match '/tools/sdd/|/\.agents/rules/sdd-[^/]+\.md$|/\.sdd/kit\.lock\.json$') { Write-SddResposta 'ask' '[sdd-kit] arquivo gerenciado pelo kit: mudanca de metodo vai para o repositorio do kit. Confirme.'; exit 0 }
   if ($pl -notmatch ($reSpecs + '.*change\.md$') -and $pl -notmatch '/specs/.+/change\.md$') { Write-SddResposta 'allow' ''; exit 0 }
 
@@ -121,7 +120,7 @@ try {
   $stAntes = Get-SddStatusFm $antes
   $stDepois = Get-SddStatusFm $depois
   if ($stDepois -ne $stAntes -and @('Approved', 'In-Implementation') -contains $stDepois) {
-    Write-SddResposta 'deny' ("[sdd-kit] status $stDepois e portao humano: peca ao usuario para rodar 'sdd approve <NN> P1|P2' no terminal dele.")
+    Write-SddResposta 'deny' ("[sdd-kit] status $stDepois e portao humano: peca ao usuario para rodar 'sdd approve <NN> P1|P2' no terminal dele ou fornecer a frase de aprovacao no chat.")
     exit 0
   }
   if ((Get-SddCampoFm $depois 'base_ref') -ne (Get-SddCampoFm $antes 'base_ref') -and (Get-SddCampoFm $depois 'base_ref')) {

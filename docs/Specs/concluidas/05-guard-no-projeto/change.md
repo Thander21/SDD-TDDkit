@@ -1,14 +1,14 @@
 ---
 id: CHG-005
 title: Guard só no projeto (fim do passo maquina)
-status: Draft
+status: Done
 capabilities: [guard, instalador]
 risk: [config-global, portao-humano, arquivo-do-usuario]
 fonte_normativa:
-base_ref:
+base_ref: 9fd207139cedc4f6227d06d5995d37f3c5d261b3
 impact:
-  modified_files: [SpecSimpleKit/install.ps1, SpecSimpleKit/kernel/tools/sdd/sdd.ps1, SpecSimpleKit/machine/guard.ps1, SpecSimpleKit/machine/edit_guard.ps1, SpecSimpleKit/tests/test_guard.ps1, SpecSimpleKit/tests/test_install.ps1, SpecSimpleKit/tests/run_all.ps1, SpecSimpleKit/kernel/.agents/rules/sdd-core.md, SpecSimpleKit/CHANGELOG.md, README.md, AGENTS.md, tools/sdd/sdd.ps1, .agents/rules/sdd-core.md, .sdd/kit.lock.json]
-  new_files: [SpecSimpleKit/kernel/tools/sdd/guard.ps1, SpecSimpleKit/kernel/tools/sdd/edit_guard.ps1, SpecSimpleKit/tests/test_guard_projeto.ps1, tools/sdd/guard.ps1, tools/sdd/edit_guard.ps1, .claude/settings.json, .agents/hooks.json]
+  modified_files: [SpecSimpleKit/install.ps1, SpecSimpleKit/kernel/tools/sdd/sdd.ps1, SpecSimpleKit/kernel/.agents/rules/sdd-core.md, SpecSimpleKit/CHANGELOG.md, README.md, AGENTS.md, tools/sdd/sdd.ps1, .agents/rules/sdd-core.md, .sdd/kit.lock.json, "SpecSimpleKit/machine/**", "tests/**"]
+  new_files: [SpecSimpleKit/kernel/tools/sdd/guard.ps1, SpecSimpleKit/kernel/tools/sdd/edit_guard.ps1, tools/sdd/guard.ps1, tools/sdd/edit_guard.ps1, .claude/settings.json, .agents/hooks.json, tests/test_guard_projeto.ps1, docs/Specs/changes/05-guard-no-projeto/tasks.md]
 ---
 
 # CHG-005 — Guard só no projeto
@@ -36,14 +36,15 @@ que o kit configura só o projeto onde está (origem, R1 e R5).
 
 | # | Decisão | Fonte (fala do usuário, regra, doc com data) | Data |
 |---|---|---|---|
-| D1 | Claude Code: hooks e permissões em `.claude/settings.json` do projeto. Hook em formato `command` + `args` (`powershell.exe` direto, sem shell), script por `${CLAUDE_PROJECT_DIR}/tools/sdd/guard.ps1` e `.../edit_guard.ps1`, `onFailure: "block"`. Nunca caminho relativo: a pasta de trabalho do hook não é garantida. | code.claude.com/docs/en/hooks ("`${CLAUDE_PROJECT_DIR}`: the project root"; exec form substitui o placeholder em `args`; `onFailure` desde a v2.1.295), consultado em 14/10/2026 | 14/10/2026 |
-| D2 | Antigravity: entradas `sdd-kit-guard` e `sdd-kit-edit-guard` em `.agents/hooks.json` do projeto, mesmo formato de antes, script por caminho relativo `tools/sdd/...`. É tentativa: a doc não diz a pasta de trabalho do hook, e relatos de terceiros dizem que hooks não disparam na IDE nem no app (só no CLI `agy`). Fica marcado como não verificado no núcleo. | antigravity.google/docs/hooks ("Workspace level: `.agents/hooks.json`"); discuss.ai.google.dev, tópicos 176814 e 178288 (terceiros), consultados em 14/10/2026 | 14/10/2026 |
+| D1 | Antigravity (plataforma primária): hooks de comando e de edição em `.agents/hooks.json` do projeto (Workspace Customization Root). Evento PreToolUse com matcher `run_command` (comando) e `write_to_file\|replace_file_content\|multi_replace_file_content` (edição), invocando `guard.ps1 -Platform Antigravity` e `edit_guard.ps1 -Platform Antigravity`. O payload em stdin e a resposta JSON (`decision: force_ask\|deny\|allow`, `reason`) seguem a especificação oficial do Antigravity (`agy-customizations`). | antigravity.google/docs/hooks; agy-customizations builtin docs/hooks.md; instrução do usuário em 19/10/2026 | 19/10/2026 |
+| D2 | Claude Code (suporte multi-IDE secundário): hooks e permissões em `.claude/settings.json` do projeto para desenvolvedores que utilizam Claude Code, mantendo o `.agents/` e `AGENTS.md` como raiz canônica universal de regras e guards. Hook em formato `command` + `args` (`powershell.exe` direto, sem shell), script por `${CLAUDE_PROJECT_DIR}/tools/sdd/guard.ps1` e `.../edit_guard.ps1`, `onFailure: "block"`. | code.claude.com/docs/en/hooks ("`${CLAUDE_PROJECT_DIR}`: the project root"; exec form; `onFailure`), 14/10/2026; instrução do usuário em 19/10/2026 | 19/10/2026 |
 | D3 | A lógica fica no motor: `sdd guard ativar \| desativar \| status`. O instalador chama o motor depois de copiar os arquivos; o início guiado (U2) vai chamar o mesmo comando. Uma implementação só. | origem, RN7 (a máquina confere) | 14/10/2026 |
-| D4 | Entradas do kit reconhecidas assim: hooks do Claude cujo `args` termina em `tools/sdd/guard.ps1` ou `tools/sdd/edit_guard.ps1`; permissões pela lista fixa do kit (as mesmas 42 `deny` e 4 `ask` de antes); Antigravity pelas chaves `sdd-kit-guard` e `sdd-kit-edit-guard`. Nada mais do arquivo é tocado. | origem, RN2; identificadores `sdd-kit` mantidos (CHANGELOG) | 14/10/2026 |
+| D4 | Entradas do kit reconhecidas assim: Antigravity pelas chaves `sdd-kit-guard` e `sdd-kit-edit-guard` em `.agents/hooks.json`; Claude por hooks cujo `args` termina em `tools/sdd/guard.ps1` ou `tools/sdd/edit_guard.ps1` e permissões pela lista fixa do kit (42 `deny` e 4 `ask`). Nada mais do arquivo é tocado. | origem, RN2; identificadores `sdd-kit` mantidos (CHANGELOG) | 14/10/2026 |
 | D5 | Conteúdo do usuário nos settings é preservado; a formatação do JSON pode mudar (o PowerShell reescreve o arquivo). O `status` e a saída do `ativar` dizem quais arquivos mudaram. | risco `arquivo-do-usuario` | 14/10/2026 |
 | D6 | Hooks nos settings do projeto rodam sem a tela de confiança da pasta, e `deny`/`ask` valem na hora: quem clona o projeto recebe o guard ativo. Aceito, porque é o guard do próprio projeto. | code.claude.com/docs/en/permissions ("What runs before you trust a folder"), 14/10/2026 | 14/10/2026 |
-| D8 | As mensagens dos guards que mandam aprovar "no terminal" (`edit_guard.ps1:124`, `guard.ps1:217`) passam a orientar a frase no chat (`sdd approve NN P1\|P2 --frase`). | achado A2 da verificação da CHG-002; decisão do usuário "Dividir", 14/10/2026 | 14/10/2026 |
 | D7 | Os guards saem de `machine/` e entram no kernel (`tools/sdd/`), viram arquivos gerenciados com hash no lock; o `edit_guard` já pede confirmação para editar `tools/sdd/`. A pasta `machine/`, a ação `maquina` e os parâmetros `-Aplicar` e `-Casa` saem do instalador. | origem, RN1 | 14/10/2026 |
+| D8 | As mensagens dos guards que mandam aprovar "no terminal" (`edit_guard.ps1:124`, `guard.ps1:217`) passam a orientar a frase no chat (`sdd approve NN P1\|P2 --frase`). | achado A2 da verificação da CHG-002; decisão do usuário "Dividir", 14/10/2026 | 14/10/2026 |
+| D9 | Resolução de comandos nos hooks do Antigravity: os comandos em `.agents/hooks.json` usam invocação do PowerShell com checagem inline que resolve tanto `tools/sdd/...` quanto `../tools/sdd/...`, operando com segurança com CWD na raiz do projeto ou na pasta `.agents/`. | agy-customizations docs/hooks.md; decisão de arquitetura em 19/10/2026 | 19/10/2026 |
 
 ## Contratos
 
@@ -97,11 +98,11 @@ arquivos de settings do projeto.
 - **QUANDO** a IA roda `sdd guard ativar`
 - **ENTÃO** sai `ERRO`, exit 2, e nenhum dos dois arquivos muda
 
-##### Scenario: C4 — Guard dispara no Claude Code
+##### Scenario: C4 — Guard dispara no Antigravity
 
-- **DADO** o Claude Code aberto num projeto com o guard ativo
-- **QUANDO** a IA pede para rodar `git push --force`
-- **ENTÃO** a ferramenta pede a confirmação do usuário (evidência MANUAL)
+- **DADO** o Antigravity com `.agents/hooks.json` configurado com os guards do kit
+- **QUANDO** o hook avalia `run_command` com comando destrutivo (ex.: `git push --force`) ou edição indevida em `change.md`
+- **ENTÃO** o hook responde com `decision: "force_ask"` (para comando) ou `decision: "deny"` (para edição) e `reason` justificando a proteção, seguindo o contrato oficial do Antigravity
 
 #### Requirement: SPEC-GUARD-003 — Desativar remove só o que é do kit
 
@@ -178,17 +179,38 @@ deixando o guard ativo no projeto.
 ## Critérios de aceite
 
 - Cenários com teste rastreado (`SPEC-GUARD-00N/Cn`, `SPEC-INST-005/Cn`)
-  passando em 5.1 e 7; GUARD-002/C4 com evidência MANUAL.
+  passando em 5.1 e 7.
 - `sdd validate` verde; `sdd goal 05` = `GOAL PASS`.
 - Este repositório com o guard ativo (`sdd guard status` = `ativo`).
 
 ## Análise pré-implementação
 
-<!-- Etapa 5, depois do P1. -->
+- **Unidade:** capacidades `guard` e `instalador`. Quatro requisitos (`SPEC-GUARD-002`, `SPEC-GUARD-003`, `SPEC-GUARD-004`, `SPEC-INST-005`) com 11 cenários distribuídos em C1..C4.
+- **Arquitetura:**
+  - Migração de `guard.ps1` e `edit_guard.ps1` de `SpecSimpleKit/machine/` para `SpecSimpleKit/kernel/tools/sdd/`, integrando-os como arquivos gerenciados pelo kit com conferência de hash no lock.
+  - Implementação do comando `sdd guard` em `tools/sdd/sdd.ps1` (e `SpecSimpleKit/kernel/tools/sdd/sdd.ps1`) com os verbos:
+    - `ativar`: configura `.claude/settings.json` e `.agents/hooks.json` no projeto, preservando conteúdo preexistente do usuário e aplicando permissões deny/ask e hooks.
+    - `desativar`: remove cirurgicamente as entradas do kit sem alterar permissões ou hooks do usuário, apagando `.agents/hooks.json` se ficar vazio.
+    - `status`: valida a presença e conformidade dos hooks/permissões do kit nos arquivos de projeto (`ativo`, `inativo` ou `parcial`).
+  - Remoção da ação `maquina` e flags `-Aplicar` e `-Casa` de `SpecSimpleKit/install.ps1`. Nas ações `projeto` e `update`, invocar `sdd guard ativar` sobre o projeto de destino.
+  - Atualização dos guards:
+    - `guard.ps1`: intercepta comando `guard desativar` como `ask`; atualiza mensagens de orientação para uso do chat (`sdd approve NN P1|P2 --frase`).
+    - `edit_guard.ps1`: intercepta edição de `.claude/settings*.json` e `.agents/hooks.json` como `ask`.
+- **Risco e Segurança:**
+  - `config-global`: Nenhuma gravação fora da pasta do projeto alvo.
+  - `portao-humano`: Desativação de guard e edição de configs protegidas exigem confirmação humana (`ask`).
+  - `arquivo-do-usuario`: Manipulação idempotente e não destrutiva de `.claude/settings.json` e `.agents/hooks.json`.
+- **Plano de Testes:**
+  - Novo teste `tests/test_guard_projeto.ps1` cobrindo todas as tags rastreadas (`SPEC-GUARD-002/C1..C4`, `SPEC-GUARD-003/C1..C2`, `SPEC-GUARD-004/C1..C2`, `SPEC-INST-005/C1..C3`).
+  - O cenário `SPEC-GUARD-002/C4` passa a ser testado de forma automatizada simulando o payload stdin real do Antigravity contra os guards.
+  - Adaptação de `tests/test_guard.ps1` para apontar para os guards no kernel.
+  - Atualização de `tests/test_install.ps1` para remover testes do passo `maquina` e incluir teste de recusa da ação `maquina`.
 
 ## Tasks
 
-<!-- Etapa 4, depois do P1: RED → GREEN → REFACTOR por cenário. -->
+- [x] RED (C1,C2,C3,C4): `tests/test_guard_projeto.ps1` -> Falha esperada: comando guard inexistente, maquina ainda aceito, guards nao no kernel
+- [x] GREEN (C1,C2,C3,C4): `tests/test_guard_projeto.ps1` -> Implementar sdd guard no motor, migrar guards para kernel/tools/sdd e atualizar instalador
+- [x] REFACTOR: Remover machine/, sincronizar raiz com kernel, atualizar documentacao e suite
 
 ### Pós-GOAL
 
@@ -199,3 +221,7 @@ deixando o guard ativo no projeto.
 ## Aprovações
 
 <!-- Gravado só pelo 'sdd approve NN P1|P2'. -->
+- P1: aprovado por Thander em 2026-10-19 10:01 (sdd approve; via chat: "aprovo P1 da change 05"; change.md antes: a72a98e608ab)
+- P1: aprovado por Thander em 2026-10-19 10:21 (sdd approve; via chat: "aprovo P1 da change 05"; change.md antes: 8b4288f3ec42)
+- P2: aprovado por Thander em 2026-10-19 10:22 (sdd approve; via chat: "aprovo P2 da change 05"; change.md antes: ab8968fe39d9)
+- P2 (rebase): aprovado por Thander em 2026-10-19 10:31 (sdd approve; via chat: "aprovo P2 da change 05"; change.md antes: a32f93c48e9f)

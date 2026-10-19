@@ -10,7 +10,7 @@
 |---|---|---|---|
 | instalador | `INST` | `SpecSimpleKit/install.ps1`, `SpecSimpleKit/instalar.cmd`, `SpecSimpleKit/project-templates/` | `capabilities/instalador/spec.md` |
 | motor | `MOTOR` | `SpecSimpleKit/kernel/tools/sdd/sdd.ps1` | `capabilities/motor/spec.md` |
-| guard | `GUARD` | `SpecSimpleKit/machine/` | — |
+| guard | `GUARD` | `SpecSimpleKit/kernel/tools/sdd/guard.ps1`, `SpecSimpleKit/kernel/tools/sdd/edit_guard.ps1` | `capabilities/guard/spec.md` |
 | perfis | `PERFIL` | `SpecSimpleKit/profiles/` | — |
 | fluxo | `FLUXO` | `SpecSimpleKit/kernel/.agents/`, `SpecSimpleKit/kernel/.claude/`, `SpecSimpleKit/kernel/AGENTS.kit.md`, `SpecSimpleKit/kernel/Docs/Specs/_templates/` | — |
 

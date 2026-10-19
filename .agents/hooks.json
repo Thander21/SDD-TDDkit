@@ -1,0 +1,32 @@
+{
+    "sdd-kit-guard":  {
+                          "enabled":  true,
+                          "PreToolUse":  [
+                                             {
+                                                 "matcher":  "run_command",
+                                                 "hooks":  [
+                                                               {
+                                                                   "type":  "command",
+                                                                   "command":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"$f = if (Test-Path tools/sdd/guard.ps1) { \u0027tools/sdd/guard.ps1\u0027 } else { \u0027../tools/sdd/guard.ps1\u0027 }; \u0026 $f -Platform Antigravity\"",
+                                                                   "timeout":  15
+                                                               }
+                                                           ]
+                                             }
+                                         ]
+                      },
+    "sdd-kit-edit-guard":  {
+                               "enabled":  true,
+                               "PreToolUse":  [
+                                                  {
+                                                      "matcher":  "write_to_file|replace_file_content|multi_replace_file_content",
+                                                      "hooks":  [
+                                                                    {
+                                                                        "type":  "command",
+                                                                        "command":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"$f = if (Test-Path tools/sdd/edit_guard.ps1) { \u0027tools/sdd/edit_guard.ps1\u0027 } else { \u0027../tools/sdd/edit_guard.ps1\u0027 }; \u0026 $f -Platform Antigravity\"",
+                                                                        "timeout":  15
+                                                                    }
+                                                                ]
+                                                  }
+                                              ]
+                           }
+}

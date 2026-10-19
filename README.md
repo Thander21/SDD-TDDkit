@@ -90,7 +90,7 @@ SDD-TDDkit/
 | **Implementação Contínua** | Loop autônomo TDD contínuo: RED (falha) ➔ GREEN (passa) ➔ REFACTOR | Motor SDD (`sdd test <alvo> --change NN`) | Acompanha a execução contínua sem travas |
 | **Verificação Independente** | Reexecuta testes, audita mutações e emite `verify.md` formal | `sdd-verify` (subagente auditor) | 100% autônomo (quem codificou não aprova) |
 | **Fecho (GOAL PASS)** | Motor audita gates, integridade, árvore e evidências | Motor SDD (`sdd goal NN`) | Confirma o veredito |
-| **Arquivamento & Commit** | Promove deltas para `capabilities/` e arquiva em `concluidas/` | Motor SDD (`sdd archive NN`) | Diz: "faça o commit" |
+| **Arquivamento & Commit** | Promove deltas para `capabilities/` e arquiva em `concluidas/` | Motor SDD (`sdd archive NN`) | Sugere comando e mensagem de commit prontos |
 
 ## Andamento
 

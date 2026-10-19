@@ -75,6 +75,31 @@ O sistema DEVE remover o kit por completo a pedido do usuário, deixando zero re
 > Contrato: Remoção do bloco no `AGENTS.md` e deleção da pasta `SpecSimpleKit/`, mantendo `Specs/`.
 > Testes: `tests/test_install_modo_pasta.ps1` (tags `SPEC-INST-003/C1..C2`).
 
+### Requirement: SPEC-INST-005 — Fim do passo máquina no instalador
+
+O sistema DEVE configurar guards exclusivamente no escopo do projeto durante a instalação ou atualização, e rejeitar qualquer ação global de máquina.
+
+#### Scenario: C1 — Instalação do projeto ativa o guard no projeto
+
+- **DADO** um projeto novo recebendo `install.ps1 projeto`
+- **QUANDO** o instalador conclui a instalação
+- **ENTÃO** `sdd guard ativar` é executado automaticamente no projeto, criando `.agents/hooks.json` e `.claude/settings.json`, sem gravar nada fora da pasta do projeto
+
+#### Scenario: C2 — Ação máquina descontinuada
+
+- **DADO** o comando `install.ps1 maquina`
+- **QUANDO** executado
+- **ENTÃO** sai com mensagem explicativa e exit 2, sem alterar arquivos globais
+
+#### Scenario: C3 — Update ativa o guard
+
+- **DADO** um projeto instalado numa versão anterior sem guards configurados
+- **QUANDO** a IA roda `install.ps1 update -Destino <repo>`
+- **ENTÃO** os guards `guard.ps1` e `edit_guard.ps1` são copiados para `tools/sdd/` do projeto e o guard é ativado automaticamente
+
+> Contrato: `install.ps1 projeto` e `update` acionam `sdd guard ativar`; ação `maquina` aborta com exit 2.
+> Testes: `tests/test_guard_projeto.ps1` (tags `SPEC-INST-005/C1..C3`).
+
 ## Requisitos removidos
 
 | ID | Change | Motivo |
@@ -85,3 +110,5 @@ O sistema DEVE remover o kit por completo a pedido do usuário, deixando zero re
 | Change | Data | Efeito |
 |---|---|---|
 | CHG-001 | 2026-10-19 | Criação da spec com SPEC-INST-001, SPEC-INST-002 e SPEC-INST-003 (Modo Pasta Autocontido) |
+| CHG-005 | 2026-10-19 | SPEC-INST-005: fim do passo máquina; instalação e update ativam guard no projeto |
+

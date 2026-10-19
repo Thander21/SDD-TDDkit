@@ -1,5 +1,5 @@
 # =====================================================================
-# sdd-kit | machine/guard.ps1  (hook PreToolUse de COMANDO, escopo da maquina)
+# sdd-kit | tools/sdd/guard.ps1 (hook PreToolUse de COMANDO no projeto)
 # Pede confirmacao (ask/force_ask) antes de comando destrutivo ou reservado
 # ao usuario. Claude Code (Bash|PowerShell) e Antigravity (run_command).
 # Modelo de ameaca: agente cooperativo mas descuidado. NAO e fronteira de
@@ -214,7 +214,8 @@ function Get-SddMotivoRegex([string]$Texto) {
     @{ P = '\bDELETE\s+FROM\s+[\w."\[\]]+\s*(;|$|\)|")'; M = 'DELETE sem WHERE. Confirme.' },
     @{ P = '\b(db\s+reset|migrate\s+reset|db:drop|dropdb)\b'; M = 'reset/drop de banco. Confirme.' },
     @{ P = '--dangerously-skip-permissions|bypassPermissions|disableAllHooks'; M = 'tentativa de desligar permissoes ou hooks. Confirme.' },
-    @{ P = '\bsdd(\.ps1)?["'']?\s+approve\b'; M = 'aprovar portao e do usuario, no terminal dele (sdd approve recusa a IA).' },
+    @{ P = '\bguard\s+desativar\b'; M = 'desativar o guard do kit: a IA nao pode desligar o guard sozinha. Confirme.' },
+    @{ P = '\bsdd(\.ps1)?["'']?\s+approve\b'; M = 'aprovar portao e do usuario: no terminal dele ou pela frase do chat (sdd approve NN P1|P2 --frase).' },
     @{ P = '\bverify-record\b'; M = 'gravar o veredito do verificador: confirme que quem verificou nao foi quem implementou.' },
     @{ P = '(evidence\.jsonl|verify\.md|\.sdd[\\/]state)'; M = $null }
   )
@@ -248,8 +249,6 @@ try {
   exit 0
 } catch {
   $tipo = $_.Exception.GetType().Name
-  $det = ([string]$_.Exception.Message -split "`r?`n")[0]
-  if ($det.Length -gt 160) { $det = $det.Substring(0, 160) }
-  Write-SddResposta 'ask' ("[sdd-kit] guard falhou ($tipo`: $det): revise o comando manualmente.")
+  Write-SddResposta 'ask' ("[sdd-kit] guard falhou ($tipo): revise o comando manualmente.")
   exit 0
 }

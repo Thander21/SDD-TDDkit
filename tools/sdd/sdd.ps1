@@ -433,6 +433,7 @@ function Invoke-SddArchive([string[]]$Argv) {
     throw ("archive falhou; origem restaurada: " + $_.Exception.Message)
   }
   Write-SddLinha ("ARCHIVED: " + $c.Rel.Replace('/changes/', '/concluidas/'))
+  Write-SddLinha ("Sugestao de commit: git add -A; git commit -m `"feat: conclui e arquiva CHG-{0:D2} - {1}`"" -f [int]$c.Numero, $c.Titulo)
   return 0
 }
 
@@ -1297,6 +1298,219 @@ function Invoke-SddStatus {
   return 0
 }
 
+# ---------------------------------------------------------------------
+# guard <ativar|desativar|status>: configuracao de guard no projeto
+# ---------------------------------------------------------------------
+
+function Get-SddGuardListas {
+  $deny = @(
+    'Read(//**/.env)', 'Read(//**/.env.*)', 'Read(//**/.env.*.local)', 'Read(//**/.env.local)',
+    'Read(//**/*id_rsa*)', 'Read(//**/*id_ed25519*)', 'Read(//**/*.pem)', 'Read(//**/*.key)',
+    'Read(//**/*.pfx)', 'Read(//**/*.p12)', 'Read(//**/*credential*)', 'Read(//**/*secret*)',
+    'Read(//**/*token*)', 'Read(//**/*.kdbx)',
+    'Edit(//**/.env)', 'Edit(//**/.env.*)', 'Edit(//**/.env.*.local)', 'Edit(//**/.env.local)',
+    'Edit(//**/*id_rsa*)', 'Edit(//**/*id_ed25519*)', 'Edit(//**/*.pem)', 'Edit(//**/*.key)',
+    'Edit(//**/*.pfx)', 'Edit(//**/*.p12)', 'Edit(//**/*credential*)', 'Edit(//**/*secret*)',
+    'Edit(//**/*token*)', 'Edit(//**/*.kdbx)',
+    'Write(//**/.env)', 'Write(//**/.env.*)', 'Write(//**/.env.*.local)', 'Write(//**/.env.local)',
+    'Write(//**/*id_rsa*)', 'Write(//**/*id_ed25519*)', 'Write(//**/*.pem)', 'Write(//**/*.key)',
+    'Write(//**/*.pfx)', 'Write(//**/*.p12)', 'Write(//**/*credential*)', 'Write(//**/*secret*)',
+    'Write(//**/*token*)', 'Write(//**/*.kdbx)'
+  )
+  $ask = @(
+    'Bash(git push *)', 'Bash(git commit *)', 'PowerShell(git push *)', 'PowerShell(git commit *)'
+  )
+  return @{ Deny = $deny; Ask = $ask }
+}
+
+function Invoke-SddGuard([string[]]$Argv) {
+  $acao = if ($Argv.Count -gt 0) { $Argv[0].ToLowerInvariant() } else { 'status' }
+  if (@('ativar', 'desativar', 'status') -notcontains $acao) { throw 'uso: sdd guard [ativar|desativar|status]' }
+
+  $arqAgents = Join-Path $script:Raiz '.agents/hooks.json'
+  $arqClaude = Join-Path $script:Raiz '.claude/settings.json'
+  $listas = Get-SddGuardListas
+
+  $objAgents = $null
+  if (Test-Path -LiteralPath $arqAgents) {
+    $t = Read-SddTexto $arqAgents
+    if ($t) { try { $objAgents = $t | ConvertFrom-Json } catch { throw "$arqAgents nao e JSON valido (nada foi gravado)" } }
+  }
+  $objClaude = $null
+  if (Test-Path -LiteralPath $arqClaude) {
+    $t = Read-SddTexto $arqClaude
+    if ($t) { try { $objClaude = $t | ConvertFrom-Json } catch { throw "$arqClaude nao e JSON valido (nada foi gravado)" } }
+  }
+
+  if ($acao -eq 'status') {
+    $temAlgoAgents = ($objAgents -and ($objAgents.PSObject.Properties['sdd-kit-guard'] -or $objAgents.PSObject.Properties['sdd-kit-edit-guard']))
+    $temCompletoAgents = ($objAgents -and $objAgents.PSObject.Properties['sdd-kit-guard'] -and $objAgents.PSObject.Properties['sdd-kit-edit-guard'])
+
+    $temAlgoClaude = $false
+    $temCompletoClaude = $false
+    if ($objClaude) {
+      $temDeny = ($objClaude.PSObject.Properties['permissions'] -and $objClaude.permissions.PSObject.Properties['deny'] -and (@($objClaude.permissions.deny | Where-Object { $listas.Deny -contains $_ }).Count -gt 0))
+      $temAsk = ($objClaude.PSObject.Properties['permissions'] -and $objClaude.permissions.PSObject.Properties['ask'] -and (@($objClaude.permissions.ask | Where-Object { $listas.Ask -contains $_ }).Count -gt 0))
+      $temHooks = $false
+      if ($objClaude.PSObject.Properties['hooks'] -and $objClaude.hooks.PSObject.Properties['PreToolUse']) {
+        $matches = @($objClaude.hooks.PreToolUse | Where-Object { ($_ | ConvertTo-Json -Depth 5 -Compress) -match 'tools/sdd/guard\.ps1|tools/sdd/edit_guard\.ps1' })
+        if ($matches.Count -gt 0) { $temHooks = $true }
+      }
+      if ($temDeny -or $temAsk -or $temHooks) { $temAlgoClaude = $true }
+      $denyTotal = ($temDeny -and (@($objClaude.permissions.deny | Where-Object { $listas.Deny -contains $_ }).Count -ge $listas.Deny.Count))
+      $askTotal = ($temAsk -and (@($objClaude.permissions.ask | Where-Object { $listas.Ask -contains $_ }).Count -ge $listas.Ask.Count))
+      $hooksTotal = $false
+      if ($temHooks) {
+        $mG = @($objClaude.hooks.PreToolUse | Where-Object { ($_ | ConvertTo-Json -Depth 5 -Compress) -match 'tools/sdd/guard\.ps1' })
+        $mE = @($objClaude.hooks.PreToolUse | Where-Object { ($_ | ConvertTo-Json -Depth 5 -Compress) -match 'tools/sdd/edit_guard\.ps1' })
+        if ($mG.Count -gt 0 -and $mE.Count -gt 0) { $hooksTotal = $true }
+      }
+      if ($denyTotal -and $askTotal -and $hooksTotal) { $temCompletoClaude = $true }
+    }
+
+    if ($temCompletoAgents -and $temCompletoClaude) {
+      Write-SddLinha 'GUARD: ativo'
+      return 0
+    }
+    if (-not $temAlgoAgents -and -not $temAlgoClaude) {
+      Write-SddLinha 'GUARD: inativo'
+      return 1
+    }
+    $faltando = @()
+    if (-not $temCompletoAgents) { $faltando += '.agents/hooks.json' }
+    if (-not $temCompletoClaude) { $faltando += '.claude/settings.json' }
+    Write-SddLinha ("GUARD: parcial (falta {0})" -f ($faltando -join ', '))
+    return 1
+  }
+
+  if ($acao -eq 'ativar') {
+    $alterados = New-Object System.Collections.ArrayList
+
+    # 1. Antigravity: .agents/hooks.json
+    if ($null -eq $objAgents) { $objAgents = New-Object PSObject }
+    $cmdG = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$f = if (Test-Path tools/sdd/guard.ps1) { ''tools/sdd/guard.ps1'' } else { ''../tools/sdd/guard.ps1'' }; & $f -Platform Antigravity"'
+    $cmdE = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$f = if (Test-Path tools/sdd/edit_guard.ps1) { ''tools/sdd/edit_guard.ps1'' } else { ''../tools/sdd/edit_guard.ps1'' }; & $f -Platform Antigravity"'
+    $hkG = [ordered]@{ enabled = $true; PreToolUse = @([ordered]@{ matcher = 'run_command'; hooks = @([ordered]@{ type = 'command'; command = $cmdG; timeout = 15 }) }) }
+    $hkE = [ordered]@{ enabled = $true; PreToolUse = @([ordered]@{ matcher = 'write_to_file|replace_file_content|multi_replace_file_content'; hooks = @([ordered]@{ type = 'command'; command = $cmdE; timeout = 15 }) }) }
+
+    if ($objAgents.PSObject.Properties['sdd-kit-guard']) { $objAgents.'sdd-kit-guard' = $hkG } else { $objAgents | Add-Member -NotePropertyName 'sdd-kit-guard' -NotePropertyValue $hkG }
+    if ($objAgents.PSObject.Properties['sdd-kit-edit-guard']) { $objAgents.'sdd-kit-edit-guard' = $hkE } else { $objAgents | Add-Member -NotePropertyName 'sdd-kit-edit-guard' -NotePropertyValue $hkE }
+
+    $dirAgents = Split-Path -Parent $arqAgents
+    if (-not (Test-Path -LiteralPath $dirAgents)) { New-Item -ItemType Directory -Path $dirAgents -Force | Out-Null }
+    Write-SddTextoAtomico $arqAgents ($objAgents | ConvertTo-Json -Depth 32)
+    [void]$alterados.Add('.agents/hooks.json')
+
+    # 2. Claude Code: .claude/settings.json
+    if ($null -eq $objClaude) { $objClaude = New-Object PSObject }
+    if (-not $objClaude.PSObject.Properties['permissions']) { $objClaude | Add-Member -NotePropertyName permissions -NotePropertyValue (New-Object PSObject) }
+    foreach ($k in @('deny', 'ask')) {
+      $existente = @()
+      if ($objClaude.permissions.PSObject.Properties[$k]) { $existente = @($objClaude.permissions.$k) }
+      $novos = @($listas[$k.Substring(0,1).ToUpper() + $k.Substring(1)])
+      $uniao = @($existente + @($novos | Where-Object { $existente -notcontains $_ }))
+      if ($objClaude.permissions.PSObject.Properties[$k]) { $objClaude.permissions.$k = $uniao } else { $objClaude.permissions | Add-Member -NotePropertyName $k -NotePropertyValue $uniao }
+    }
+    if (-not $objClaude.PSObject.Properties['hooks']) { $objClaude | Add-Member -NotePropertyName hooks -NotePropertyValue (New-Object PSObject) }
+    $preExist = @()
+    if ($objClaude.hooks.PSObject.Properties['PreToolUse']) {
+      $preExist = @($objClaude.hooks.PreToolUse | Where-Object {
+        $txtH = ($_ | ConvertTo-Json -Depth 10 -Compress)
+        -not ($txtH -match 'tools/sdd/guard\.ps1|tools/sdd/edit_guard\.ps1')
+      })
+    }
+    $hClaudeG = [ordered]@{
+      matcher = 'Bash|PowerShell'
+      hooks = @([ordered]@{
+        type = 'command'
+        command = 'powershell.exe'
+        args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '${CLAUDE_PROJECT_DIR}/tools/sdd/guard.ps1', '-Platform', 'Claude')
+        timeout = 15
+        onFailure = 'block'
+      })
+    }
+    $hClaudeE = [ordered]@{
+      matcher = 'Write|Edit|NotebookEdit'
+      hooks = @([ordered]@{
+        type = 'command'
+        command = 'powershell.exe'
+        args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '${CLAUDE_PROJECT_DIR}/tools/sdd/edit_guard.ps1', '-Platform', 'Claude')
+        timeout = 15
+        onFailure = 'block'
+      })
+    }
+    $preTotal = @($preExist + $hClaudeG + $hClaudeE)
+    if ($objClaude.hooks.PSObject.Properties['PreToolUse']) { $objClaude.hooks.PreToolUse = $preTotal } else { $objClaude.hooks | Add-Member -NotePropertyName PreToolUse -NotePropertyValue $preTotal }
+
+    $dirClaude = Split-Path -Parent $arqClaude
+    if (-not (Test-Path -LiteralPath $dirClaude)) { New-Item -ItemType Directory -Path $dirClaude -Force | Out-Null }
+    Write-SddTextoAtomico $arqClaude ($objClaude | ConvertTo-Json -Depth 32)
+    [void]$alterados.Add('.claude/settings.json')
+
+    Write-SddLinha ("GUARD ATIVO: " + ($alterados -join ', '))
+    return 0
+  }
+
+  if ($acao -eq 'desativar') {
+    # 1. Antigravity: remover sdd-kit-guard e sdd-kit-edit-guard
+    if ($objAgents) {
+      $novosProps = [ordered]@{}
+      foreach ($p in $objAgents.PSObject.Properties) {
+        if ($p.Name -ne 'sdd-kit-guard' -and $p.Name -ne 'sdd-kit-edit-guard') {
+          $novosProps[$p.Name] = $p.Value
+        }
+      }
+      if ($novosProps.Count -eq 0) {
+        Remove-Item -LiteralPath $arqAgents -Force -ErrorAction SilentlyContinue
+      } else {
+        Write-SddTextoAtomico $arqAgents ($novosProps | ConvertTo-Json -Depth 32)
+      }
+    }
+
+    # 2. Claude Code: remover hooks e permissions do kit
+    if ($objClaude) {
+      if ($objClaude.PSObject.Properties['hooks'] -and $objClaude.hooks.PSObject.Properties['PreToolUse']) {
+        $preResto = @($objClaude.hooks.PreToolUse | Where-Object {
+          $txtH = ($_ | ConvertTo-Json -Depth 10 -Compress)
+          -not ($txtH -match 'tools/sdd/guard\.ps1|tools/sdd/edit_guard\.ps1')
+        })
+        if ($preResto.Count -eq 0) {
+          $objClaude.hooks.PSObject.Properties.Remove('PreToolUse')
+          if ($objClaude.hooks.PSObject.Properties.Count -eq 0) {
+            $objClaude.PSObject.Properties.Remove('hooks')
+          }
+        } else {
+          $objClaude.hooks.PreToolUse = $preResto
+        }
+      }
+      if ($objClaude.PSObject.Properties['permissions']) {
+        foreach ($k in @('deny', 'ask')) {
+          if ($objClaude.permissions.PSObject.Properties[$k]) {
+            $itensKit = @($listas[$k.Substring(0,1).ToUpper() + $k.Substring(1)])
+            $restantes = @($objClaude.permissions.$k | Where-Object { $itensKit -notcontains $_ })
+            if ($restantes.Count -eq 0) {
+              $objClaude.permissions.PSObject.Properties.Remove($k)
+            } else {
+              $objClaude.permissions.$k = $restantes
+            }
+          }
+        }
+        if ($objClaude.permissions.PSObject.Properties.Count -eq 0) {
+          $objClaude.PSObject.Properties.Remove('permissions')
+        }
+      }
+      if ($objClaude.PSObject.Properties.Count -eq 0) {
+        Remove-Item -LiteralPath $arqClaude -Force -ErrorAction SilentlyContinue
+      } else {
+        Write-SddTextoAtomico $arqClaude ($objClaude | ConvertTo-Json -Depth 32)
+      }
+    }
+
+    Write-SddLinha 'GUARD INATIVO'
+    return 0
+  }
+}
+
 function Show-SddAjuda {
   @(
     "sdd-kit $($script:SddVersao) - motor do fluxo SDD",
@@ -1310,6 +1524,7 @@ function Show-SddAjuda {
     '  archive <NN>             arquiva change com GOAL PASS e verify da arvore atual',
     '  approve <NN> P0|P1|P2 [--frase "..."]  aprova portao: no seu terminal, ou pela IA com a sua frase do chat',
     '  verify-record <NN> APROVADO|REPROVADO [--arquivo f]   grava o relatorio do verificador',
+    '  guard <ativar|desativar|status>  configura guards de comando e edicao no projeto',
     '  commit-gate            usado pelo pre-commit: exige check/validate verde da mesma arvore',
     '  install-hook           instala o pre-commit (encadeia o que ja existir)',
     '  calibrate              confere as sondas e mede light/full; marca o perfil como calibrado',
@@ -1346,6 +1561,7 @@ function Invoke-SddMain([string[]]$Argv) {
       'archive' { return (Invoke-SddArchive $resto) }
       'approve' { return (Invoke-SddApprove $resto) }
       'verify-record' { return (Invoke-SddVerifyRecord $resto) }
+      'guard' { return (Invoke-SddGuard $resto) }
       'commit-gate' { return (Invoke-SddCommitGate) }
       'install-hook' { return (Invoke-SddInstallHook) }
       'calibrate' { return (Invoke-SddCalibrate) }

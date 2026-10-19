@@ -173,7 +173,11 @@ O fluxo SDD avança através de 3 portões canônicos: P0 aprova o Tema do Plano
    `REMOVED` apaga e registra ID, change e motivo em `Requisitos removidos`.
 3. Atualize as linhas de contrato e de testes dos requisitos tocados.
 4. Acrescente `CHG-NNN | data | efeito` no histórico da spec viva.
-5. `git mv` da pasta para `concluidas/` e `status: Done`.
+5. `git mv` da pasta para `concluidas/` e `status: Done` (motor: `sdd archive NN`).
+6. Sugestão de commit: imediatamente após concluir e arquivar, a IA DEVE sugerir
+   o comando de commit completo com mensagem descritiva padronizada pronta para o
+   usuário executar (ex.: `git add -A; git commit -m "feat: conclui e arquiva CHG-NN - <título>"`),
+   já que commit e push são prerrogativa exclusiva do usuário.
 
 Quem arquiva por último faz o rebase sobre a spec viva já atualizada. A decisão de archive é do usuário. Falha em gate ou edição após o veredito interrompe archive e exige corrigir a change e reexecutar a validação integral. Achado
 depois do archive que muda requisito abre change nova.

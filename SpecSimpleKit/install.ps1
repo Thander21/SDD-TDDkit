@@ -15,16 +15,20 @@
 # dominio) nunca e sobrescrita; executavel editado no projeto = FAIL.
 # =====================================================================
 param(
-  [Parameter(Position = 0)][ValidateSet('projeto', 'check', 'update', 'maquina', 'detectar', 'modo-pasta', 'remover')][string]$Acao,
+  [Parameter(Position = 0)][ValidateSet('projeto', 'check', 'update', 'detectar', 'modo-pasta', 'remover', 'maquina')][string]$Acao,
   [string]$Destino,
   [string]$Perfil,
   [switch]$Forcar,
-  [switch]$Aplicar,
   [switch]$SemArvoreLimpa,
-  [switch]$ModoPasta,
-  [string]$Casa
+  [switch]$ModoPasta
 )
 $ErrorActionPreference = 'Stop'
+
+if ($Acao -eq 'maquina') {
+  [Console]::Out.WriteLine("ERRO: a acao 'maquina' foi descontinuada (CHG-005). O guard agora e configurado por projeto via 'tools/sdd/sdd.ps1 guard ativar'.")
+  exit 2
+}
+
 $Kit = $PSScriptRoot
 $Kernel = Join-Path $Kit 'kernel'
 $Utf8 = New-Object System.Text.UTF8Encoding $false
@@ -316,6 +320,10 @@ function Invoke-Projeto {
   $n = Add-Gitignore $raiz (@('.sdd/state/', '.sdd/profile.local.json') + @($p.paths.gerados))
   Write-Lock $raiz $hashes (Get-Sha $bloco) $Perfil
   Write-L ("INSTALADO sdd-kit {0} em {1} (perfil {2}; {3} arquivos gerenciados; {4} linhas no .gitignore)." -f (Get-KitVersao), $raiz, $Perfil, $hashes.Count, $n)
+  $sdd = Join-Path $raiz 'tools/sdd/sdd.ps1'
+  if (Test-Path -LiteralPath $sdd) {
+    try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $sdd guard ativar | Out-Null } catch { }
+  }
   Write-L 'Proximos passos (no projeto):'
   Write-L '  1. Abra o projeto na IDE e peca a IA: "rode a skill sdd-bootstrap" (descobre, pergunta, preenche o AGENTS.md, calibra o perfil e instala o pre-commit).'
   Write-L '  2. Revise o diff e faca o commit do bootstrap.'
@@ -403,115 +411,17 @@ function Invoke-Update {
   foreach ($rel in $remover) { Remove-Item -LiteralPath (Join-Path $raiz $rel); Write-L "  removido (saiu do kit): $rel" }
   Write-T $agentsP $agentsNovo
   Write-Lock $raiz $hashes (Get-Sha (Get-BlocoAgents)) ([string]$lock.perfil_origem)
+  $sdd = Join-Path $raiz 'tools/sdd/sdd.ps1'
+  if (Test-Path -LiteralPath $sdd) {
+    try { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $sdd guard ativar | Out-Null } catch { }
+  }
   Write-L ("UPDATE {0} -> {1}: {2} gravado(s), {3} .kitnew, {4} removido(s). Revise o diff e rode 'sdd check'." -f $lock.kit_versao, (Get-KitVersao), $gravar.Count, $kitnew.Count, $remover.Count)
   return 0
 }
 
-# ---------------------------------------------------------------------
-function Get-Casa { if ($Casa) { return [System.IO.Path]::GetFullPath($Casa) } return [Environment]::GetFolderPath('UserProfile') }
-
-function Get-FragmentoClaude([string]$Hooks) {
-  $ps = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-  $segredos = @('.env', '.env.local', '.env.*.local', '.env.production*', '.env.staging*', '.env.development*', '.env.test*', '*.pfx', '*.p12', '*.key', '*.pem', '*.jks', '*.keystore', '*.snk', '*.p8', '*.mobileprovision', 'id_rsa*', 'id_ed25519*', '.npmrc', '.pypirc', '.netrc')
-  $deny = @()
-  foreach ($s in $segredos) { $deny += "Read(//**/$s)"; $deny += "Edit(//**/$s)" }
-  $ask = @('Bash(git push *)', 'Bash(git commit *)', 'PowerShell(git push *)', 'PowerShell(git commit *)')
-  $guard = [ordered]@{ type = 'command'; command = $ps; args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Hooks 'guard.ps1'), '-Platform', 'Claude'); timeout = 15; onFailure = 'block' }
-  $edit = [ordered]@{ type = 'command'; command = $ps; args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Hooks 'edit_guard.ps1'), '-Platform', 'Claude'); timeout = 15; onFailure = 'block' }
-  return [ordered]@{
-    permissions = [ordered]@{ deny = $deny; ask = $ask }
-    hooks = [ordered]@{ PreToolUse = @([ordered]@{ matcher = 'Bash|PowerShell'; hooks = @($guard) }, [ordered]@{ matcher = 'Write|Edit|NotebookEdit'; hooks = @($edit) }) }
-  }
-}
-
-function Get-FragmentoAntigravity([string]$Hooks) {
-  $ps = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-  $g = "$ps -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Hooks 'guard.ps1')`" -Platform Antigravity"
-  $e = "$ps -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Hooks 'edit_guard.ps1')`" -Platform Antigravity"
-  return [ordered]@{
-    'sdd-kit-guard' = [ordered]@{ enabled = $true; PreToolUse = @([ordered]@{ matcher = 'run_command'; hooks = @([ordered]@{ type = 'command'; command = $g; timeout = 15 }) }) }
-    'sdd-kit-edit-guard' = [ordered]@{ enabled = $true; PreToolUse = @([ordered]@{ matcher = 'write_to_file|replace_file_content|multi_replace_file_content'; hooks = @([ordered]@{ type = 'command'; command = $e; timeout = 15 }) }) }
-  }
-}
-
-function Test-EhNosso($Entrada) {
-  return (($Entrada | ConvertTo-Json -Depth 10 -Compress) -match 'sdd-kit[\\/]+hooks')
-}
-
-function Merge-ClaudeSettings([string]$Arq, $Frag) {
-  $obj = $null
-  $txt = Read-T $Arq
-  if ($txt) { try { $obj = $txt | ConvertFrom-Json } catch { throw "$Arq nao e JSON valido: corrija antes (nada foi gravado)" } }
-  if ($null -eq $obj) { $obj = New-Object PSObject }
-  if (-not $obj.PSObject.Properties['permissions']) { $obj | Add-Member -NotePropertyName permissions -NotePropertyValue (New-Object PSObject) }
-  foreach ($tipo in @('deny', 'ask')) {
-    $atual = @()
-    if ($obj.permissions.PSObject.Properties[$tipo]) { $atual = @($obj.permissions.$tipo) }
-    $novo = @($atual + @($Frag.permissions[$tipo] | Where-Object { $atual -notcontains $_ }))
-    if ($obj.permissions.PSObject.Properties[$tipo]) { $obj.permissions.$tipo = $novo } else { $obj.permissions | Add-Member -NotePropertyName $tipo -NotePropertyValue $novo }
-  }
-  if (-not $obj.PSObject.Properties['hooks']) { $obj | Add-Member -NotePropertyName hooks -NotePropertyValue (New-Object PSObject) }
-  $pre = @()
-  if ($obj.hooks.PSObject.Properties['PreToolUse']) { $pre = @($obj.hooks.PreToolUse | Where-Object { -not (Test-EhNosso $_) }) }
-  $pre = @($pre + @($Frag.hooks.PreToolUse))
-  if ($obj.hooks.PSObject.Properties['PreToolUse']) { $obj.hooks.PreToolUse = $pre } else { $obj.hooks | Add-Member -NotePropertyName PreToolUse -NotePropertyValue $pre }
-  return ($obj | ConvertTo-Json -Depth 32)
-}
-
-function Merge-AntigravityHooks([string]$Arq, $Frag) {
-  $obj = $null
-  $txt = Read-T $Arq
-  if ($txt) { try { $obj = $txt | ConvertFrom-Json } catch { throw "$Arq nao e JSON valido: corrija antes (nada foi gravado)" } }
-  if ($null -eq $obj) { $obj = New-Object PSObject }
-  foreach ($k in $Frag.Keys) {
-    if ($obj.PSObject.Properties[$k]) { $obj.$k = $Frag[$k] } else { $obj | Add-Member -NotePropertyName $k -NotePropertyValue $Frag[$k] }
-  }
-  return ($obj | ConvertTo-Json -Depth 32)
-}
-
-function Invoke-Maquina {
-  $casa = Get-Casa
-  $base = Join-Path $casa '.sdd-kit'
-  $hooks = Join-Path $base 'hooks'
-  foreach ($f in @('guard.ps1', 'edit_guard.ps1')) { Write-T (Join-Path $hooks $f) (Read-T (Join-Path $Kit "machine/$f")) }
-  $fc = Get-FragmentoClaude $hooks
-  $fa = Get-FragmentoAntigravity $hooks
-  $frag = Join-Path $base 'fragmentos'
-  Write-T (Join-Path $frag 'claude-settings.json') ($fc | ConvertTo-Json -Depth 32)
-  Write-T (Join-Path $frag 'antigravity-hooks.json') ($fa | ConvertTo-Json -Depth 32)
-  Write-L "Hooks copiados para $hooks; fragmentos em $frag."
-  if (-not $Aplicar) {
-    Write-L 'Para aplicar (com backup): install.ps1 maquina -Aplicar'
-    Write-L '  Claude: mescla permissions (deny/ask) e hooks PreToolUse em ~/.claude/settings.json (exige Claude Code >= 2.1.295 por causa do onFailure).'
-    Write-L '  Antigravity: acrescenta 2 hooks em ~/.gemini/config/hooks.json.'
-    return 0
-  }
-  $ts = (Get-Date).ToString('yyyyMMdd-HHmmss')
-  $cs = Join-Path $casa '.claude/settings.json'
-  $novoC = Merge-ClaudeSettings $cs $fc
-  $ah = Join-Path $casa '.gemini/config/hooks.json'
-  $novoA = Merge-AntigravityHooks $ah $fa
-  foreach ($par in @(@($cs, $novoC), @($ah, $novoA))) {
-    if (Test-Path -LiteralPath $par[0]) { Copy-Item -LiteralPath $par[0] -Destination ($par[0] + ".bak-$ts") }
-    Write-T $par[0] $par[1]
-    Write-L "  aplicado: $($par[0])"
-  }
-  Write-L 'Teste de canario (nas duas IDEs): peca a IA para rodar "git push --force" num repositorio de teste; a IDE tem de pedir confirmacao.'
-  return 0
-}
-
-# Assistente: guard da maquina (se faltar) e depois instala ou atualiza o projeto.
+# Assistente: instala ou atualiza o projeto.
 function Invoke-Assistente {
   Write-L ("SpecSimpleKit {0} - assistente de instalacao (Enter aceita o padrao entre colchetes)" -f (Get-KitVersao))
-  if (-not (Test-Path -LiteralPath (Join-Path (Get-Casa) '.sdd-kit/hooks/guard.ps1'))) {
-    Write-L 'O guard da maquina (uma vez por maquina) ainda nao esta instalado: ele faz a IDE pedir confirmacao'
-    Write-L 'antes de comandos perigosos e mescla permissoes em ~/.claude/settings.json (com backup).'
-    if (Read-SimNao 'Instalar o guard da maquina agora?' $false) {
-      $script:Aplicar = $true
-      if ((Invoke-Maquina) -ne 0) { return 1 }
-      Write-L ''
-    }
-  }
   $raiz = Resolve-Destino
   if (Test-Path -LiteralPath (Join-Path $raiz '.sdd/kit.lock.json')) {
     Write-L "O kit ja esta instalado em $raiz."
@@ -655,7 +565,6 @@ try {
     'projeto' { $c = Invoke-Projeto }
     'check' { $c = Invoke-Check }
     'update' { $c = Invoke-Update }
-    'maquina' { $c = Invoke-Maquina }
     'detectar' { $c = Invoke-Detectar }
     'modo-pasta' { $c = Invoke-ModoPasta }
     'remover' { $c = Invoke-Remover }

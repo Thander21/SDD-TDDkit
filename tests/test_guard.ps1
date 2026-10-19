@@ -4,8 +4,8 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
 $kit = Get-SddKitPath
-$guard = Join-Path $kit 'machine/guard.ps1'
-$edit = Join-Path $kit 'machine/edit_guard.ps1'
+$guard = Join-Path $kit 'kernel/tools/sdd/guard.ps1'
+$edit = Join-Path $kit 'kernel/tools/sdd/edit_guard.ps1'
 $ps = $env:SDD_TESTE_PS
 if (-not $ps) { $ps = 'powershell' }
 

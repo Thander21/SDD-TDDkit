@@ -66,7 +66,7 @@ try {
 
   # Update a partir de uma copia do kit com versao nova.
   New-Item -ItemType Directory -Path $kit2 -Force | Out-Null
-  foreach ($item in @('install.ps1', 'VERSION', 'kernel', 'machine', 'profiles', 'project-templates')) { Copy-Item -LiteralPath (Join-Path $kit $item) -Destination $kit2 -Recurse -Force }
+  foreach ($item in @('install.ps1', 'VERSION', 'kernel', 'profiles', 'project-templates')) { Copy-Item -LiteralPath (Join-Path $kit $item) -Destination $kit2 -Recurse -Force }
   [System.IO.File]::WriteAllText((Join-Path $kit2 'VERSION'), "0.1.1`n")
   Add-Content -LiteralPath (Join-Path $kit2 'kernel/.agents/rules/sdd-revisao.md') -Value "`n- linha nova do kit"
   Add-Content -LiteralPath (Join-Path $kit2 'kernel/.agents/rules/sdd-fluxo.md') -Value "`n- linha nova do kit no fluxo"
@@ -135,25 +135,14 @@ try {
   Assert-Contem 'conflito na instalacao' $r.Texto 'CONFLITO'
   Assert-Igual 'nada gravado no conflito' (Test-Arq $dir2 'tools/sdd/sdd.ps1') $false
 
-  # Maquina numa casa falsa, com configuracao previa
-  Write-Arq $casa '.claude/settings.json' '{ "permissions": { "allow": ["Bash(npm test)"] }, "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "outro-hook" } ] } ] }, "theme": "dark" }'
-  Write-Arq $casa '.gemini/config/hooks.json' '{ "meu-hook": { "enabled": true } }'
-  $r = Invoke-Install $kit @('maquina', '-Casa', $casa)
-  Assert-Contem 'maquina sem -Aplicar so gera fragmentos' $r.Texto 'Para aplicar'
-  Assert-Igual 'guard copiado' (Test-Arq $casa '.sdd-kit/hooks/guard.ps1') $true
-  $r = Invoke-Install $kit @('maquina', '-Casa', $casa, '-Aplicar')
-  $r = Invoke-Install $kit @('maquina', '-Casa', $casa, '-Aplicar')
-  $cs = (Get-Txt $casa '.claude/settings.json') | ConvertFrom-Json
-  Assert-Igual 'allow preexistente preservado' (@($cs.permissions.allow) -contains 'Bash(npm test)') $true
-  Assert-Igual 'deny de .env aplicado' (@($cs.permissions.deny) -contains 'Read(//**/.env)') $true
-  Assert-Igual 'ask de git push aplicado' (@($cs.permissions.ask) -contains 'Bash(git push *)') $true
-  Assert-Igual 'hook alheio preservado e sem duplicar os do kit (3 grupos)' @($cs.hooks.PreToolUse).Count 3
-  Assert-Igual 'chave alheia preservada' $cs.theme 'dark'
-  Assert-Contem 'hook com onFailure block' (Get-Txt $casa '.claude/settings.json') '"onFailure":\s*"block"'
-  $ah = (Get-Txt $casa '.gemini/config/hooks.json') | ConvertFrom-Json
-  Assert-Igual 'hook alheio do Antigravity preservado' ($null -ne $ah.'meu-hook') $true
-  Assert-Igual 'guard do Antigravity aplicado' ($ah.'sdd-kit-guard'.PreToolUse[0].matcher) 'run_command'
-  Assert-Igual 'backup criado' (@(Get-ChildItem -LiteralPath (Join-Path $casa '.claude') -Filter 'settings.json.bak-*').Count -ge 1) $true
+  # Acao maquina descontinuada: rejeitada com exit 2
+  $r = Invoke-Install $kit @('maquina')
+  Assert-Igual 'maquina rejeitada com exit 2' $r.Codigo 2
+  Assert-Contem 'mensagem cita descontinuada' $r.Texto 'descontinuada'
+
+  # Instalacao do projeto ativa o guard no projeto
+  Assert-Igual 'guard ativo no projeto instalado' (Test-Arq $dir '.agents/hooks.json') $true
+  Assert-Igual 'settings do claude ativo no projeto instalado' (Test-Arq $dir '.claude/settings.json') $true
 } finally {
   Remove-SddTesteRepo $dir; Remove-SddTesteRepo $dir2; Remove-SddTesteRepo $kit2; Remove-SddTesteRepo $casa
 }
