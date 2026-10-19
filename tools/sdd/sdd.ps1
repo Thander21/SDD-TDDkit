@@ -433,7 +433,10 @@ function Invoke-SddArchive([string[]]$Argv) {
     throw ("archive falhou; origem restaurada: " + $_.Exception.Message)
   }
   Write-SddLinha ("ARCHIVED: " + $c.Rel.Replace('/changes/', '/concluidas/'))
-  Write-SddLinha ("Sugestao de commit: git add -A; git commit -m `"feat: conclui e arquiva CHG-{0:D2} - {1}`"" -f [int]$c.Numero, $c.Titulo)
+  $numArch = if ($c.Nome -match '^(\d+)') { [int]$Matches[1] } else { 0 }
+  $titArch = if ($c.Fm) { Get-SddProp $c.Fm 'title' '' } else { '' }
+  if (-not $titArch -and $c.Nome -match '^\d+-(.*)$') { $titArch = $Matches[1] }
+  Write-SddLinha ("Sugestao de commit: git add -A; git commit -m `"feat: conclui e arquiva CHG-{0:D3} - {1}`"" -f $numArch, $titArch)
   return 0
 }
 

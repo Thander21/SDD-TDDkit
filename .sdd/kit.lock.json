@@ -1,9 +1,9 @@
 {
     "kit_versao":  "0.1.0",
     "fonte":  "C:\\_Projetos\\Agentic AI Engineer\\ferramentas de estudo\\SDD-TDDkit\\SpecSimpleKit",
-    "fonte_commit":  "9fd207139cedc4f6227d06d5995d37f3c5d261b3",
+    "fonte_commit":  "df162c68d8bca18f2c9343ce013e4740ba3e3dd7",
     "perfil_origem":  "powershell",
-    "gravado_em":  "2026-10-19T11:08:42Z",
+    "gravado_em":  "2026-10-19T12:29:47Z",
     "bloco_agents":  "525bd10072f98d7f6c3a1aa37c6f861e61bf4fd127c6d3b3695f710667bd0757",
     "arquivos":  {
                      ".agents/rules/sdd-core.md":  "89587f6977db4185874292bfb51fa496a91b87093c16e8f0bba4647ce3a7cf98",
@@ -23,6 +23,6 @@
                      "docs/Specs/_templates/spec.md":  "d4583a74c977dd07aa0d8adcd450a43e10853599208c46641c85ad818acb5262",
                      "tools/sdd/edit_guard.ps1":  "86e05d8b224afd9f3da75f1e8454a921f71dfe9198959726e0e2eb798e8355f3",
                      "tools/sdd/guard.ps1":  "dbdd8ae3c3fdd36fa2f9e7d7b5f633c1f4228264fc1beba12b2ae09973d97b9c",
-                     "tools/sdd/sdd.ps1":  "ad64402162464d89ecd1fa70f3438f4e12e30f9d0f4ae654ad281cb174c97fa1"
+                     "tools/sdd/sdd.ps1":  "2c4350aac837503a8a48b033c452103469b4750f89c99990d8e89f62fa8cf48b"
                  }
 }

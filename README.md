@@ -15,6 +15,15 @@ spec com cenários antes do código) e **TDD** (Test-Driven Development: teste
 que falha antes do código que o faz passar), com portões que só o usuário
 aprova.
 
+O kit estrutura todo o desenvolvimento no **Ciclo dos 4 Artefatos**:
+1. **Constitution:** Regras invariantes e limites permanentes (`AGENTS.md` e `.agents/rules/`);
+2. **Specification:** O que e por quê com cenários BDD `DADO/QUANDO/ENTÃO` (`change.md`);
+3. **Technical Plan:** Arquitetura, riscos, impacto e decisões técnicas (`change.md`);
+4. **Tasks:** Tarefas atômicas de RED/GREEN/REFACTOR rastreáveis (`change.md`).
+
+Para entender o fluxo completo, consulte o guia canônico:
+👉 **[`SpecSimpleKit/docs/como-usar-fluxo.md`](SpecSimpleKit/docs/como-usar-fluxo.md)**.
+
 Este repositório é onde o kit é desenvolvido, **usando o próprio kit**
 (dogfooding): a raiz é um projeto SDD com o SpecSimpleKit instalado, e cada
 melhoria do kit passa pelo mesmo caminho que ele ensina — backlog, change com
@@ -97,11 +106,16 @@ SDD-TDDkit/
 | Onde | O quê |
 |---|---|
 | `docs/Specs/concluidas/02-aprovacao-pelo-chat/` | CHG-002: portões aprovados por frase no chat (feito) |
-| `docs/Specs/changes/05-guard-no-projeto/` | CHG-005: guard só no projeto, fim do passo `maquina` (Draft, próxima) |
+| `docs/Specs/concluidas/05-guard-no-projeto/` | CHG-005: guard só no projeto, fim do passo `maquina` (feito) |
+| `docs/Specs/changes/03-metodologia-guiada/` | CHG-003: metodologia documentada e guiada (em implementação) |
 | `docs/Specs/changes/01-instalador-modo-agente/` | CHG-001: instalador em modo agente (Draft; será revista no modo pasta) |
-| `docs/Specs/backlog/` | 03 metodologia documentada, 04 perfil powershell, 06 ideias do PDV D+, 07 endurecer a frase |
+| `docs/Specs/backlog/` | 04 perfil powershell, 06 ideias do PDV D+, 07 endurecer a frase |
 
-Spec viva já criada: [`docs/Specs/capabilities/motor/spec.md`](docs/Specs/capabilities/motor/spec.md).
+Specs vivas criadas:
+- [`docs/Specs/capabilities/motor/spec.md`](docs/Specs/capabilities/motor/spec.md)
+- [`docs/Specs/capabilities/guard/spec.md`](docs/Specs/capabilities/guard/spec.md)
+- [`docs/Specs/capabilities/instalador/spec.md`](docs/Specs/capabilities/instalador/spec.md)
+- [`docs/Specs/capabilities/fluxo/spec.md`](docs/Specs/capabilities/fluxo/spec.md)
 
 ## Regras de manutenção
 

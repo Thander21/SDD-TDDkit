@@ -7,7 +7,7 @@ $falhou = @()
 foreach ($ps in @('powershell', 'pwsh')) {
   if (-not (Get-Command $ps -ErrorAction SilentlyContinue)) { Write-Host "pulado: $ps ausente"; continue }
   $env:SDD_TESTE_PS = $ps
-  $casos = @(@('test_guard.ps1'), @('test_install.ps1'), @('test_motor_node.ps1'), @('test_motor_regressao.ps1'), @('test_motor_archive.ps1'), @('test_fluxo_continuidade.ps1'), @('test_motor_aprovacao.ps1'))
+  $casos = @(@('test_guard.ps1'), @('test_install.ps1'), @('test_motor_node.ps1'), @('test_motor_regressao.ps1'), @('test_motor_archive.ps1'), @('test_fluxo_continuidade.ps1'), @('test_motor_aprovacao.ps1'), @('test_fluxo_metodologia.ps1'))
   if ($Py) { $casos += , @('test_motor_stacks.ps1', '-Stack', 'python', '-Py', $Py) }
   if (-not $SemDotnet) { $casos += , @('test_motor_stacks.ps1', '-Stack', 'dotnet') }
   if (-not $SemDart) { $casos += , @('test_motor_dart.ps1') }
