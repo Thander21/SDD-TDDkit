@@ -1014,15 +1014,26 @@ function Invoke-SddGoal([string[]]$Argv) {
 # Frase do usuario vale como aprovacao se citar a aprovacao, o portao e o
 # numero da change (CHG-002, D2). Ex.: "aprovo P1 da change 01".
 function Test-SddFraseAprovacao([string]$Frase, [string]$Portao, [string]$NN) {
-  $num = [int]($NN -replace '\D', '')
+  $alvoDigitos = ($NN -replace '\D', '')
+  if (-not $alvoDigitos) { return $false }
+  $alvo = $alvoDigitos.TrimStart('0')
+  if (-not $alvo) { $alvo = '0' }
   if ($Frase -notmatch '(?i)aprov') { return $false }
   if ($Frase -notmatch ('(?i)\b' + $Portao + '\b')) { return $false }
   # O numero so vale colado a "change" ou "CHG" (D10): numero solto, como uma
   # data ou o "1" de "P1", nao cita a change; citar outra change recusa.
   # Compara como texto sem zeros a esquerda: numero gigante nao vira excecao (achado A3).
-  $alvo = ([string]$num).TrimStart('0')
-  $citadas = @([regex]::Matches($Frase, '(?i)\b(?:change|chg)[\s\-_:#]*([0-9]+)\b') | ForEach-Object { $_.Groups[1].Value.TrimStart('0') })
-  if ($citadas.Count -eq 0) { return $false }
+  # Citar identificador espurio (letra, digito nao ASCII ou outra change) recusa (CHG-008).
+  $matches = [regex]::Matches($Frase, '(?i)\b(?:change|chg)[\s\-_:#]*(\S+)')
+  if ($matches.Count -eq 0) { return $false }
+  $citadas = New-Object System.Collections.ArrayList
+  foreach ($m in $matches) {
+    $token = $m.Groups[1].Value -replace '[\.,;:!?''"\)]+$', ''
+    if ($token -notmatch '^[0-9]+$') { return $false }
+    $cit = $token.TrimStart('0')
+    if (-not $cit) { $cit = '0' }
+    [void]$citadas.Add($cit)
+  }
   return (@($citadas | Where-Object { $_ -ne $alvo }).Count -eq 0)
 }
 
@@ -1060,6 +1071,10 @@ function Invoke-SddApprove([string[]]$Argv) {
   }
   if ($pos.Count -ne 2 -or @('P0', 'P1', 'P2') -notcontains $pos[1].ToUpperInvariant()) { throw 'uso: sdd approve <NN> P0|P1|P2 [--frase "<frase do usuario>"]' }
   $portao = $pos[1].ToUpperInvariant()
+  if ($pos[0] -notmatch '^\d{1,4}$') {
+    Write-SddLinha ("RECUSADO: numero de change invalido: '{0}'." -f $pos[0])
+    return 1
+  }
   if ($null -ne $frase) {
     $frase = (($frase -replace '\s+', ' ') -replace '"', "'").Trim()
     if (-not (Test-SddFraseAprovacao $frase $portao $pos[0])) {

@@ -16,9 +16,11 @@ condição de parada das changes, rodado pela IA ou pelo usuário.
 
 O sistema DEVE aceitar a aprovação de um portão pedida pela IA quando ela
 traz a frase do usuário, e gravar a frase literal no registro. A frase vale
-se contém "aprov", o portão (P1 ou P2) e a change colada a "change" ou
-"CHG" ("change 02", "CHG-002"); número solto é ignorado e citar outra change
-recusa.
+se contém "aprov", o portão (P0, P1 ou P2) e estritamente a change alvo colada a
+"change" ou "CHG" ("change 02", "CHG-002"); número solto é ignorado, citar
+outra change recusa, e tokens colados ou não numéricos pós-"change"/"CHG" recusam.
+O `$NN` e as citações são comparados como texto normalizado sem zeros à esquerda,
+sem estouro por coerção inteira.
 
 #### Scenario: C1 — Frase válida pela IA
 
@@ -34,9 +36,9 @@ recusa.
 
 #### Scenario: C3 — Frase que não cita a aprovação, o portão ou a change
 
-- **DADO** a mesma change
-- **QUANDO** a frase não tem "aprov", não cita a change, cita outra change, tem só número solto ou número gigante
-- **ENTÃO** sai `RECUSADO`, exit 1, e o arquivo não muda
+- **DADO** uma change 01 e a IA chamando com `--frase`
+- **QUANDO** a frase não tem "aprov", não cita a change, cita outra change (mesmo com sufixo ou dígito não ASCII como "change 03x" ou "change ٣"), tem só número solto, ou traz número gigante na linha de comando / frase
+- **ENTÃO** sai `RECUSADO`, exit 1 (sem ERRO/exceção), e o arquivo não muda
 
 #### Scenario: C4 — P2 por frase grava base_ref
 
@@ -44,8 +46,8 @@ recusa.
 - **QUANDO** a IA roda `sdd approve 01 P2 --frase "aprovo P2 da change 01"`
 - **ENTÃO** o status vira `In-Implementation`, `base_ref` recebe o HEAD e a linha P2 cita a frase
 
-> Contrato: `sdd approve <NN> P1|P2 [--frase "<texto>"]` → `APROVADO` (exit 0) | `RECUSADO` (exit 1); função `Test-SddFraseAprovacao`.
-> Testes: `SpecSimpleKit/tests/test_motor_aprovacao.ps1` (tags `SPEC-MOTOR-001/C1..C4`).
+> Contrato: `sdd approve <NN> P0|P1|P2 [--frase "<texto>"]` → `APROVADO` (exit 0) | `RECUSADO` (exit 1); função `Test-SddFraseAprovacao`.
+> Testes: `tests/test_motor_aprovacao.ps1` (tags `SPEC-MOTOR-001/C1..C4`).
 
 ### Requirement: SPEC-MOTOR-002 — Archive guardado por goal, verify e árvore atual
 
@@ -94,3 +96,4 @@ retornado por `Get-SddArvore` na chamada. Recusa ou falha preserva os arquivos.
 |---|---|---|
 | CHG-002 | 16/10/2026 | ADDED SPEC-MOTOR-001 (aprovação por frase no chat) |
 | CHG-007 | 18/10/2026 | ADDED SPEC-MOTOR-002 (archive guardado por goal, verify e árvore atual) |
+| CHG-008 | 19/10/2026 | MODIFIED SPEC-MOTOR-001 (endurecimento da frase de aprovação contra tokens espúrios e overflow) |

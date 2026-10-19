@@ -56,12 +56,27 @@ try {
     Assert-Igual '[SPEC-MOTOR-001/C3] arquivo nao muda' (Get-Txt $dir) $t0
     # C3 (achado A1 do verificador): o "1" de "P1" nao conta como numero da change.
     # C3 (achado A1-R, D10): numero solto (data, "os 2 portoes") nao cita a change.
+    # C3 (achado A1-R, D10): numero solto (data, "os 2 portoes") nao cita a change.
     # C3 (A3, A4 da 3a verificacao): numero gigante recusa (nao ERRO); citar a change certa e outra recusa.
-    foreach ($f in @('aprovo P1 da change 03', 'aprovo P1', 'aprovo P1 da change 03 em 01/10', 'aprovo P1 da change 99999999999', 'aprovo P1 da change 01 e change 03')) {
+    # C3 (CHG-008): citar outra change com sufixo, digito nao ASCII ou letra recusa; NN gigante no argv sai exit 1 (nao ERRO).
+    $frasesRecusaC3 = @(
+      'aprovo P1 da change 03',
+      'aprovo P1',
+      'aprovo P1 da change 03 em 01/10',
+      'aprovo P1 da change 99999999999',
+      'aprovo P1 da change 01 e change 03',
+      'aprovo P1 da change 01 e change 03x',
+      "aprovo P1 da change 01 e change $([char]0x0663)",
+      'aprovo P1 da change 01 e change abc'
+    )
+    foreach ($f in $frasesRecusaC3) {
       $r = Invoke-Sdd $dir @('approve', '01', 'P1', '--frase', $f)
       Assert-Igual "[SPEC-MOTOR-001/C3] '$f' para a change 01 sai com exit 1" $r.Codigo 1
       Assert-Igual "[SPEC-MOTOR-001/C3] '$f' nao muda o arquivo" (Get-Txt $dir) $t0
     }
+    $rGigante = Invoke-Sdd $dir @('approve', '99999999999', 'P1', '--frase', 'aprovo P1 da change 99999999999')
+    Assert-Igual '[SPEC-MOTOR-001/C3] NN gigante na linha de comando sai com exit 1' $rGigante.Codigo 1
+    Assert-Contem '[SPEC-MOTOR-001/C3] NN gigante na linha de comando sai RECUSADO' $rGigante.Texto 'RECUSADO'
     $rel2 = 'Docs/Specs/changes/02-y/change.md'
     Write-Arq $dir $rel2 ((Get-Change 'Approved' $linhaP1Antiga) -replace 'CHG-001', 'CHG-002')
     foreach ($f in @('aprovo P2 da change 07', 'aprovo P1 e P2 da change 05, os 2 portoes')) {
