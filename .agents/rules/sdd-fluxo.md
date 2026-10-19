@@ -49,15 +49,14 @@ código voltar a cumprir o requisito não promove. Na dúvida, pergunte.
 
 ## 4. Etapas e portões
 
-Depois de P1, prossiga sem pedir nova autorização: reserve os IDs no índice, complete plano, tasks agrupadas e análise e apresente P2 para a change inteira. Depois de P2, implemente as tasks como plano de trabalho, sem portões por item. Se uma decisão mudar o escopo aprovado, registre a dúvida e volte à clarificação.
+O fluxo SDD avança através de 3 portões canônicos: P0 aprova o Tema do Plano; P1 aprova a Clarificação e Especificação; P2 aprova o Plano Técnico e as Tasks para a change inteira. Depois de P2, implemente as tasks em loop contínuo autônomo, sem portões por item. Se uma decisão mudar o escopo aprovado, registre a dúvida e volte à clarificação.
 
 | # | Etapa | Saída | Status |
 |---|---|---|---|
-| 1 | Documento da change | Problema, deltas e cenários `SPEC-<DOM>-NNN/Cn` | `Draft` |
-| 2 | Aprovação do escopo | `## Perguntas em aberto` vazia; respostas viram `D<n>` | **P1** aprova a change inteira: frase do usuário → `sdd approve NN P1 --frase` → `Approved` |
-| 3 | Plano e tasks | Decisões, contratos, riscos, `impact`, tasks agrupadas por alvo/suíte | `Approved` |
-| 4 | Aprovação da execução | Análise completa, cobertura e tarefas para a change inteira | **P2** aprova a change inteira: `sdd approve NN P2 --frase` → `In-Implementation` + `base_ref` |
-| 5 | Implementação e fecho | código + testes + evidência agrupada; validate, verificador e goal da change inteira | `In-Implementation` |
+| 0 | Tema do Plano | Problema, objetivos e limites do que NÃO fazer | **P0** aprova o Tema do Plano: frase do usuário → `sdd approve NN P0 --frase` → permanece `Draft` |
+| 1 | Clarificação e Especificação | Deltas, cenários BDD `SPEC-<DOM>-NNN/Cn` e `## Perguntas em aberto` vazia | **P1** aprova a Clarificação da change: frase do usuário → `sdd approve NN P1 --frase` → `Approved` |
+| 2 | Plano Técnico e Tasks | Decisões, contratos, riscos, `impact`, tasks agrupadas e análise pré-implementação | **P2** aprova a Change e Tasks: frase do usuário → `sdd approve NN P2 --frase` → `In-Implementation` + `base_ref` |
+| 3 | Implementação TDD e Fecho | Loop contínuo: RED -> GREEN -> REFACTOR; validate, verificador independente e goal da change inteira | `In-Implementation` |
 | ↺ | Archive (a pedido do usuário) | deltas na spec viva; pasta em `concluidas/` | `Done` |
 
 - **Clarificação:** só vira pergunta o que muda o resultado (regra,
@@ -85,7 +84,7 @@ Depois de P1, prossiga sem pedir nova autorização: reserve os IDs no índice, 
   `base_ref` (só o `sdd approve P2` grava), `impact.modified_files` e
   `impact.new_files` (aceitam glob e pasta terminada em `/`).
 - Seções de título fixo: `Perguntas em aberto`, `Análise pré-implementação`,
-  `Tasks` (com a subseção `Pós-GOAL`, que o goal ignora), `Exceções`,
+  `Tasks` (na seção do `change.md` ou no arquivo dedicado `tasks.md` gerado pós-P1 na pasta da change, com a subseção `Pós-GOAL`, que o goal ignora), `Exceções`,
   `Aprovações` (só o `sdd approve` grava).
 - Linhas de evidência: `- [x] RED (C1,C2): <alvo do sdd test> -> Falha esperada: <asserção>`
   e `- [x] GREEN (C1,C2): <alvo> -> passou`. O alvo é a string exata passada ao
@@ -176,7 +175,7 @@ Depois de P1, prossiga sem pedir nova autorização: reserve os IDs no índice, 
 4. Acrescente `CHG-NNN | data | efeito` no histórico da spec viva.
 5. `git mv` da pasta para `concluidas/` e `status: Done`.
 
-Quem arquiva por último faz o rebase sobre a spec viva já atualizada. A decisão de archive é do usuário. Achado
+Quem arquiva por último faz o rebase sobre a spec viva já atualizada. A decisão de archive é do usuário. Falha em gate ou edição após o veredito interrompe archive e exige corrigir a change e reexecutar a validação integral. Achado
 depois do archive que muda requisito abre change nova.
 
 ## 10. Loop, paralelismo e estado

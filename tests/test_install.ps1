@@ -2,7 +2,7 @@
 # Uso: powershell -File tests/test_install.ps1   (interprete: SDD_TESTE_PS)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $ps = $env:SDD_TESTE_PS
 if (-not $ps) { $ps = 'powershell' }
 

@@ -5,7 +5,7 @@ param([Parameter(Mandatory = $true)][ValidateSet('python', 'dotnet')][string]$St
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
 
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $dir = New-SddTesteRepo -Nome $Stack
 try {
   if ($Stack -eq 'python') {

@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
 
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $rel = 'Docs/Specs/changes/01-x/change.md'
 $linhaP1Antiga = '- P1: aprovado por teste em 2026-10-12 10:00 (sdd approve; change.md antes: 000000000000)'
 

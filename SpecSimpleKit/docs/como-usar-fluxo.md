@@ -120,8 +120,9 @@ citada no registro.
 | Ideia | o que quer, em texto livre | item no backlog e a sugestão de refinar |
 | Refinar | "refine o item NN" | requisitos conferidos no código e perguntas |
 | Pronto | "item NN Pronto" (depois de ler e editar) | confirmação e a sugestão de abrir a change |
-| Abrir | "abra o item NN" | `change.md` em Draft e o que ler antes do P1 |
-| P1 | "aprovo P1 da change NN" | plano, tasks e análise completas para P2; P1 vale para o documento inteiro |
+| Abrir | "abra o item NN" | `change.md` em Draft com o Tema do Plano |
+| P0 | "aprovo P0 da change NN" | aprova o Tema do Plano e limites; avança para clarificação |
+| P1 | "aprovo P1 da change NN" | plano, tasks e análise completas para P2; P1 vale para a Clarificação inteira |
 | P2 | "aprovo P2 da change NN" | implementação da change inteira; RED/GREEN agrupados por suíte, tags por cenário |
 | Fecho | "verifique a change NN" | validate, verificador independente e `GOAL PASS`/`FAIL` da change inteira |
 | Archive | "arquive a change NN" | spec viva atualizada e a change em `concluidas/` |

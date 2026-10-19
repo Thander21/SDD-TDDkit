@@ -2,14 +2,14 @@
 
 **A oficina onde o SpecSimpleKit é construído.**
 
-> Quer **usar** o kit num projeto seu? Vá direto para o produto:
-> **[SpecSimpleKit](https://github.com/Thander21/SDD-TDDkit/tree/main/SpecSimpleKit)**
-> — o README de lá explica o que é SDD e TDD, como baixar só a pasta
-> `SpecSimpleKit` para o seu projeto e como usar pelo chat.
+> Quer **usar** o kit num projeto seu? Vá direto para o repositório do produto:
+> **[SpecSimpleKit](https://github.com/Thander21/SpecSimpleKit)**
+> — repositório independente pronto para clonar (`git clone --depth 1 https://github.com/Thander21/SpecSimpleKit.git SpecSimpleKit`),
+> com instruções de instalação e uso guiado pelo chat.
 
 ## O que é
 
-O [SpecSimpleKit](SpecSimpleKit/README.md) é um mini-framework que guia a IA
+O [SpecSimpleKit](https://github.com/Thander21/SpecSimpleKit) é um mini-framework que guia a IA
 (Claude Code, Antigravity) a trabalhar com **SDD** (Spec-Driven Development:
 spec com cenários antes do código) e **TDD** (Test-Driven Development: teste
 que falha antes do código que o faz passar), com portões que só o usuário
@@ -23,8 +23,8 @@ archive. Se o kit falha aqui, a falha vira item de backlog e é corrigida aqui.
 
 ## O que ele faz
 
-- Guarda o **produto** em `SpecSimpleKit/` (é a única pasta que vai para os
-  projetos dos usuários).
+- Guarda o **produto** em `SpecSimpleKit/` (que é sincronizado com o repositório
+  [Thander21/SpecSimpleKit](https://github.com/Thander21/SpecSimpleKit) para uso nos projetos).
 - Guarda o **desenvolvimento** do produto na raiz: as specs do próprio kit
   (`docs/Specs/`), as regras de IA instaladas e a suíte de testes.
 - Prova cada mudança com a suíte do kit no Windows PowerShell 5.1 e no pwsh 7
@@ -32,8 +32,8 @@ archive. Se o kit falha aqui, a falha vira item de backlog e é corrigida aqui.
 
 ## Para quem
 
-Para quem desenvolve o SpecSimpleKit. Para usar o kit, veja o
-[README do produto](SpecSimpleKit/README.md).
+Para quem desenvolve o SpecSimpleKit. Para usar o kit em outros projetos, veja o
+[repositório do SpecSimpleKit](https://github.com/Thander21/SpecSimpleKit).
 
 ## Estrutura
 
@@ -72,9 +72,25 @@ SDD-TDDkit/
 |---|---|
 | Depois de alterar (~5 s) | `powershell -File tools/sdd/sdd.ps1 check` |
 | Antes de commit (suíte completa, ~7 min) | `powershell -File tools/sdd/sdd.ps1 validate` |
-| RED e GREEN | `powershell -File tools/sdd/sdd.ps1 test SpecSimpleKit/tests/<arquivo>.ps1 --change NN` |
+| RED e GREEN | `powershell -File tools/sdd/sdd.ps1 test tests/<arquivo>.ps1 --change NN` |
 | Parada da change | `powershell -File tools/sdd/sdd.ps1 goal NN` |
-| Suíte direto | `powershell -File SpecSimpleKit/tests/run_all.ps1 [-Py <python do venv>]` |
+| Suíte direto | `powershell -File tests/run_all.ps1 [-Py <python do venv>]` |
+| Publicar o kit no repo público | `powershell -File tools/push-kit.ps1` (ou `git subtree push --prefix=SpecSimpleKit specsimplekit main`) |
+
+## Fluxo e Matriz de Skills
+
+| Fase / Portão | O que acontece | Qual Skill / Ferramenta roda | Ação do Usuário |
+|---|---|---|---|
+| **0. Setup Inicial** | Detecta a stack, cria `.sdd/profile.json` e configura `AGENTS.md` | `sdd-bootstrap` | Pede no chat: "Instale o SpecSimpleKit" |
+| **1. Backlog & Ideação** | Levanta requisitos no código, cria cenários e refina o item | `backlog-refinement` | Conversa, responde dúvidas e diz "Pronto" |
+| **Portão P0 (Tema)** | Valida o tema macro e abre a change em `Draft` | `backlog-refinement` (modo abrir) | Escreve: "aprovo P0 da change NN" |
+| **Portão P1 (Especificação)** | Formaliza os cenários BDD (`DADO/QUANDO/ENTÃO`) no `change.md` | IA autônoma (regras `sdd-fluxo`) | Escreve: "aprovo P1 da change NN" |
+| **Plano & Decomposição** | Elabora a análise técnica e gera o arquivo separado `tasks.md` | IA autônoma (regras `sdd-fluxo`) | Revisa `change.md` e `tasks.md` |
+| **Portão P2 (Change + Tasks)** | Homologa a arquitetura, impact e a lista de tarefas técnicas | Motor SDD (`sdd approve NN P2`) | Escreve: "aprovo P2 da change NN" |
+| **Implementação Contínua** | Loop autônomo TDD contínuo: RED (falha) ➔ GREEN (passa) ➔ REFACTOR | Motor SDD (`sdd test <alvo> --change NN`) | Acompanha a execução contínua sem travas |
+| **Verificação Independente** | Reexecuta testes, audita mutações e emite `verify.md` formal | `sdd-verify` (subagente auditor) | 100% autônomo (quem codificou não aprova) |
+| **Fecho (GOAL PASS)** | Motor audita gates, integridade, árvore e evidências | Motor SDD (`sdd goal NN`) | Confirma o veredito |
+| **Arquivamento & Commit** | Promove deltas para `capabilities/` e arquiva em `concluidas/` | Motor SDD (`sdd archive NN`) | Diz: "faça o commit" |
 
 ## Andamento
 

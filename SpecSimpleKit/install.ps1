@@ -15,12 +15,13 @@
 # dominio) nunca e sobrescrita; executavel editado no projeto = FAIL.
 # =====================================================================
 param(
-  [Parameter(Position = 0)][ValidateSet('projeto', 'check', 'update', 'maquina')][string]$Acao,
+  [Parameter(Position = 0)][ValidateSet('projeto', 'check', 'update', 'maquina', 'detectar', 'modo-pasta', 'remover')][string]$Acao,
   [string]$Destino,
   [string]$Perfil,
   [switch]$Forcar,
   [switch]$Aplicar,
   [switch]$SemArvoreLimpa,
+  [switch]$ModoPasta,
   [string]$Casa
 )
 $ErrorActionPreference = 'Stop'
@@ -520,6 +521,134 @@ function Invoke-Assistente {
   return (Invoke-Projeto)
 }
 
+function Remove-BlocoAgents([string]$Texto) {
+  $t = $Texto -replace "`r`n", "`n"
+  $a = $t.IndexOf($MarcaIni); $b = $t.IndexOf($MarcaFim)
+  if ($a -ge 0 -and $b -ge $a) {
+    $antes = $t.Substring(0, $a).TrimEnd("`n")
+    $depois = $t.Substring($b + $MarcaFim.Length).TrimStart("`n")
+    if ($antes -and $depois) { return $antes + "`n`n" + $depois }
+    if ($antes) { return $antes + "`n" }
+    return $depois
+  }
+  return $t
+}
+
+function Invoke-Detectar {
+  $dir = if ($Destino) { [System.IO.Path]::GetFullPath($Destino) } else { (Get-Location).Path }
+  $temKit = (Test-Path -LiteralPath (Join-Path $dir 'SpecSimpleKit')) -or (Test-Path -LiteralPath (Join-Path $dir '.sdd/kit.lock.json')) -or (Test-Path -LiteralPath (Join-Path $dir '.sdd/profile.json'))
+  $isGit = $false
+  try {
+    $r = Invoke-G $dir @('rev-parse', '--is-inside-work-tree') -PermitirFalha
+    if ($r.Codigo -eq 0 -and ($r.Out -join '').Trim() -eq 'true') { $isGit = $true }
+  } catch { }
+
+  $sug = Get-PerfilSugerido $dir
+  $modo = if (Test-Path -LiteralPath (Join-Path $dir 'SpecSimpleKit')) { 'pasta' } elseif ($temKit) { 'legado' } else { $null }
+  $v = Get-KitVersao
+
+  $obj = [ordered]@{
+    kit_instalado = [bool]$temKit
+    git = [bool]$isGit
+    perfil_sugerido = if ($sug) { $sug } else { $null }
+  }
+  if ($temKit) {
+    if ($modo) { $obj['modo'] = $modo }
+    $pAtual = $sug
+    if (Test-Path -LiteralPath (Join-Path $dir '.sdd/profile.json')) {
+      try {
+        $pj = (Read-T (Join-Path $dir '.sdd/profile.json')) | ConvertFrom-Json
+        if ($pj.perfil -is [string]) { $pAtual = [string]$pj.perfil }
+        elseif ($pj.perfil.nome) { $pAtual = [string]$pj.perfil.nome }
+      } catch { }
+    }
+    if ($pAtual) { $obj['perfil'] = $pAtual }
+    $obj['kit_versao'] = $v
+  }
+  $json = $obj | ConvertTo-Json -Compress
+  Write-L $json
+  return 0
+}
+
+function Invoke-ModoPasta {
+  $dir = if ($Destino) { [System.IO.Path]::GetFullPath($Destino) } else { (Get-Location).Path }
+  if (-not (Test-Path -LiteralPath $dir -PathType Container)) { throw "pasta nao encontrada: $dir" }
+  $pNome = if ($Perfil) { $Perfil } else { Get-PerfilSugerido $dir }
+  if (-not $pNome) { $pNome = 'node' }
+
+  $profOrigem = Join-Path $Kit "profiles/$pNome.json"
+  $sddDir = Join-Path $dir '.sdd'
+  if (-not (Test-Path -LiteralPath $sddDir)) { New-Item -ItemType Directory -Path $sddDir -Force | Out-Null }
+
+  if (Test-Path -LiteralPath $profOrigem) {
+    $profJson = Read-T $profOrigem
+    Write-T (Join-Path $sddDir 'profile.json') $profJson
+  } else {
+    $profJson = @{
+      perfil = @{ nome = $pNome; versao = (Get-KitVersao) }
+      projeto = @{ specs_root = 'Specs' }
+    } | ConvertTo-Json -Depth 5
+    Write-T (Join-Path $sddDir 'profile.json') $profJson
+  }
+
+  $agentsPath = Join-Path $dir 'AGENTS.md'
+  $agentsAtual = Read-T $agentsPath
+  if ($null -eq $agentsAtual) {
+    $agentsAtual = "# AGENTS.md`n"
+  }
+
+  $blocoModoPasta = @(
+    '## Metodologia (sdd-kit: modo-pasta)',
+    '',
+    '- **Nucleo sempre ativo:** `SpecSimpleKit/kernel/.agents/rules/sdd-core.md`.',
+    '- **Fluxo spec-driven:** `SpecSimpleKit/kernel/.agents/rules/sdd-fluxo.md`, lido antes de trabalho nao trivial.',
+    '- **Revisao:** `SpecSimpleKit/kernel/.agents/rules/sdd-revisao.md`.',
+    '- **Skills:** `SpecSimpleKit/kernel/.agents/skills/`.',
+    '- **Motor:** `powershell -File SpecSimpleKit/kernel/tools/sdd/sdd.ps1 <check|validate|test|goal|status|ajuda>`.',
+    '- **Perfil:** `.sdd/profile.json`.',
+    '- **Remocao:** para desinstalar o kit mantendo suas specs intactas, rode:',
+    '  `powershell -File SpecSimpleKit/install.ps1 remover -Destino . -ModoPasta`'
+  ) -join "`n"
+
+  $novoAgents = Set-BlocoAgents $agentsAtual $blocoModoPasta
+  Write-T $agentsPath $novoAgents
+
+  Write-L "Modo pasta configurado em $dir (perfil $pNome)."
+  return 0
+}
+
+function Invoke-Remover {
+  $dir = if ($Destino) { [System.IO.Path]::GetFullPath($Destino) } else { (Get-Location).Path }
+  if (-not (Test-Path -LiteralPath $dir -PathType Container)) { throw "pasta nao encontrada: $dir" }
+
+  $agentsPath = Join-Path $dir 'AGENTS.md'
+  if (Test-Path -LiteralPath $agentsPath) {
+    $txt = Read-T $agentsPath
+    $novoTxt = Remove-BlocoAgents $txt
+    Write-T $agentsPath $novoTxt
+    Write-L "Bloco do sdd-kit removido de $agentsPath."
+  }
+
+  $sddDir = Join-Path $dir '.sdd'
+  if (Test-Path -LiteralPath $sddDir) {
+    Remove-Item -LiteralPath $sddDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-L "Pasta .sdd removida."
+  }
+
+  $kitPasta = Join-Path $dir 'SpecSimpleKit'
+  if (Test-Path -LiteralPath $kitPasta) {
+    try {
+      Remove-Item -LiteralPath $kitPasta -Recurse -Force -ErrorAction Stop
+    } catch {
+      cmd /c "rmdir /s /q `"$kitPasta`"" 2>$null
+    }
+    Write-L "Pasta SpecSimpleKit removida."
+  }
+
+  Write-L "Remocao concluida com sucesso. Suas specs permanecem preservadas."
+  return 0
+}
+
 try {
   if ($Assistente) { exit (Invoke-Assistente) }
   switch ($Acao) {
@@ -527,6 +656,9 @@ try {
     'check' { $c = Invoke-Check }
     'update' { $c = Invoke-Update }
     'maquina' { $c = Invoke-Maquina }
+    'detectar' { $c = Invoke-Detectar }
+    'modo-pasta' { $c = Invoke-ModoPasta }
+    'remover' { $c = Invoke-Remover }
   }
   exit $c
 } catch {

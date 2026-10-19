@@ -1,6 +1,14 @@
-# Utilitarios dos testes do sdd-kit (carregar com dot-source). ASCII.
 $script:Falhas = 0
 $script:Total = 0
+
+function Get-SddKitPath {
+  $raiz = Split-Path -Parent $PSScriptRoot
+  $tentativas = @((Join-Path $raiz 'SpecSimpleKit'), $raiz)
+  foreach ($t in $tentativas) {
+    if (Test-Path -LiteralPath (Join-Path $t 'kernel')) { return $t }
+  }
+  return (Join-Path $raiz 'SpecSimpleKit')
+}
 
 function New-SddTesteRepo([string]$Nome) {
   $base = [System.IO.Path]::GetTempPath()

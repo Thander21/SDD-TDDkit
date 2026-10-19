@@ -2,7 +2,7 @@
 # C1-C5 are covered in one target; each contract block carries its trace tag.
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 function Get-SddTreeForTest([string]$Dir, [string]$Kit) {
   $git = Join-Path (Split-Path $Dir -Parent) '.test-tree-index'
   $env:GIT_INDEX_FILE = $git

@@ -3,7 +3,7 @@
 # Uso: powershell -File tests/test_motor_regressao.ps1
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 
 function New-Repo {
   $d = New-SddTesteRepo -Nome 'regr'

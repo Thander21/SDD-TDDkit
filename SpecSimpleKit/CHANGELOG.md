@@ -2,6 +2,8 @@
 
 ## Não lançado
 
+- Modo Pasta Autocontido (CHG-001): o kit opera dentro de `SpecSimpleKit/` sem copiar regras ou motor para a raiz do usuário. Início conversacional via chat (`detectar` e `modo-pasta`), remoção limpa (`remover -ModoPasta`) com zero resíduo do kit no projeto, e suíte de desenvolvimento movida para fora do pacote distribuído (`tests/` na oficina), mantendo a pasta `Specs/` preservada intacta como documentação viva.
+- Portão P0 de Tema do Plano e ciclo contínuo pós-P2 (CHG-006): portão inicial antes da clarificação detalhada, mantendo a IA em loop autônomo contínuo até a entrega após a aprovação de P2.
 - Changes completas têm gates P1/P2 únicos por documento; RED/GREEN pode ser agrupado por suíte/alvo com cobertura de cenários agregada no goal. Limites normais: até 2 capacidades relacionadas, 4 requisitos, 12 cenários, cerca de 20 arquivos de produto e 400 linhas no change.md. Excedentes exigem justificativa de coesão e validação no P1; specs vivas podem crescer sem teto de extensão.
 - `sdd archive <NN>` exige GOAL PASS final e `verify.md` APROVADO para a árvore atual; grava `Done` e move a change completa para `concluidas/` sem criar commit.
 

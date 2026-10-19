@@ -23,7 +23,7 @@
   ],
   "full": [
     "@light",
-    { "nome": "Testes", "cmd": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "SpecSimpleKit/tests/run_all.ps1"] }
+    { "nome": "Testes", "cmd": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tests/run_all.ps1"] }
   ],
   "test": {
     "alvo": "caminho de um script de teste (ex.: tests/test_install.ps1). Um cenario por script ou filtro por parametro do proprio script.",

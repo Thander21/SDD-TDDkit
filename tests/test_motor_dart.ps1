@@ -3,7 +3,7 @@
 # Uso: powershell -File tests/test_motor_dart.ps1
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $dir = New-SddTesteRepo -Nome 'dart'
 try {
   Write-Arq $dir 'pubspec.yaml' "name: cobaia`nenvironment:`n  sdk: ^3.5.0`ndev_dependencies:`n  test: ^1.25.0`n"

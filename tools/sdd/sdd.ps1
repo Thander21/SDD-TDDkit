@@ -869,7 +869,12 @@ function Invoke-SddGoal([string[]]$Argv) {
   if ($det.Count) { Add-Falha 'status' @($det) }
 
   $tasks = Get-SddSecao $c.Corpo 'Tasks'
-  if ($null -eq $tasks) { Add-Falha 'tasks' @('secao ## Tasks ausente') }
+  $tasksFile = Join-Path $c.Dir 'tasks.md'
+  if (Test-Path -LiteralPath $tasksFile) {
+    $tasksTxt = Read-SddTexto $tasksFile
+    if ($tasksTxt) { $tasks = $tasksTxt }
+  }
+  if ($null -eq $tasks) { Add-Falha 'tasks' @('secao ## Tasks ou arquivo tasks.md ausente') }
   else {
     $ativa = ($tasks -split '(?m)^###\s+P\S{1,3}s-GOAL.*$')[0]
     $abertas = @([regex]::Matches($ativa, '(?m)^\s*-\s*\[ \]\s*(.*)$') | ForEach-Object { $_.Groups[1].Value.Trim() })
@@ -1049,7 +1054,7 @@ function Invoke-SddApprove([string[]]$Argv) {
       $frase = $Argv[$i + 1]; $i++
     } else { $pos += $Argv[$i] }
   }
-  if ($pos.Count -ne 2 -or @('P1', 'P2') -notcontains $pos[1].ToUpperInvariant()) { throw 'uso: sdd approve <NN> P1|P2 [--frase "<frase do usuario>"]' }
+  if ($pos.Count -ne 2 -or @('P0', 'P1', 'P2') -notcontains $pos[1].ToUpperInvariant()) { throw 'uso: sdd approve <NN> P0|P1|P2 [--frase "<frase do usuario>"]' }
   $portao = $pos[1].ToUpperInvariant()
   if ($null -ne $frase) {
     $frase = (($frase -replace '\s+', ' ') -replace '"', "'").Trim()
@@ -1068,7 +1073,10 @@ function Invoke-SddApprove([string[]]$Argv) {
   $rotulo = $portao
   $semFonte = @(Get-SddRiscosSemFonte $c)
   if ($semFonte.Count) { throw ("risk " + ($semFonte -join ', ') + " exige fonte_normativa antes do portao") }
-  if ($portao -eq 'P1') {
+  if ($portao -eq 'P0') {
+    if ($st -ne 'Draft') { throw "P0 exige status Draft (atual: $st)" }
+    $novo = 'Draft'
+  } elseif ($portao -eq 'P1') {
     if ($st -ne 'Draft') { throw "P1 exige status Draft (atual: $st)" }
     if (-not (Test-SddSecaoVazia (Get-SddSecao $c.Corpo 'Perguntas em aberto'))) { throw "'Perguntas em aberto' nao esta vazia" }
     $novo = 'Approved'
@@ -1300,7 +1308,7 @@ function Show-SddAjuda {
     '  spec-lint              confere frontmatter, portoes e IDs das changes',
     '  goal <NN> [--pre-verify]   condicao de parada da change (GOAL PASS|FAIL)',
     '  archive <NN>             arquiva change com GOAL PASS e verify da arvore atual',
-    '  approve <NN> P1|P2 [--frase "..."]  aprova portao: no seu terminal, ou pela IA com a sua frase do chat',
+    '  approve <NN> P0|P1|P2 [--frase "..."]  aprova portao: no seu terminal, ou pela IA com a sua frase do chat',
     '  verify-record <NN> APROVADO|REPROVADO [--arquivo f]   grava o relatorio do verificador',
     '  commit-gate            usado pelo pre-commit: exige check/validate verde da mesma arvore',
     '  install-hook           instala o pre-commit (encadeia o que ja existir)',

@@ -3,7 +3,7 @@
 # Uso: powershell -File tests/test_guard.ps1   (interprete do hook: SDD_TESTE_PS)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $guard = Join-Path $kit 'machine/guard.ps1'
 $edit = Join-Path $kit 'machine/edit_guard.ps1'
 $ps = $env:SDD_TESTE_PS

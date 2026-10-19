@@ -6,7 +6,7 @@ param([string]$Fonte)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers.ps1')
 
-$kit = Split-Path -Parent $PSScriptRoot
+$kit = Get-SddKitPath
 $dir = New-SddTesteRepo -Nome 'node'
 try {
   # Projeto minimo: package.json com script de teste do node:test.
